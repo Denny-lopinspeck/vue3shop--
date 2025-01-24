@@ -78,6 +78,8 @@ export default {
       this.toastType = `bg-${type}`
       this.toast.show()
     },
+
+    // 處理登入表單提交
     async login(event) {
       event.preventDefault()
       if (!this.validateForm()) {
@@ -94,6 +96,8 @@ export default {
         this.isLoading = false
       }
     },
+
+    // 表單驗證
     validateForm() {
       if (!this.username || !this.password) {
         this.showToast('請填寫完整的登入資訊', 'danger')
@@ -105,6 +109,8 @@ export default {
       }
       return true
     },
+    
+    // Email 格式驗證
     validateEmail(email) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     },

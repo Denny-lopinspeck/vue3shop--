@@ -252,14 +252,15 @@ export default {
   },
 
   methods: {
+
+    // 取得購物車資料
     async getCartData() {
       if (this.isLoading) return
 
       try {
         this.isLoading = true
         const result = await this.cartStore.getCart()
-
-
+       
         if (!result.success) {
           throw new Error('購物車資料載入失敗')
         }
@@ -284,12 +285,14 @@ export default {
       return item.product.unit || 0
     },
 
+    // 更新商品數量
     async updateQuantity(item) {
       if (!item || item.qty < 1) {
         item.qty = 1
         return
       }
 
+      // 檢查庫存限制
       const availableStock = item.product.unit
       if (item.qty > availableStock) {
         item.qty = availableStock
@@ -405,8 +408,10 @@ export default {
       }
     },
 
+    // 驗證訂單表單
     validateForm() {
       const { name, email, tel, address } = this.form
+      // 檢查必填欄位
       if (!name?.trim() || !email?.trim() || !tel?.trim() || !address?.trim()) {
         Toast.fire({
           icon: 'warning',
@@ -415,6 +420,7 @@ export default {
         return false
       }
 
+      // 驗證 Email 格式
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(email)) {
         Toast.fire({
@@ -458,6 +464,7 @@ export default {
       }
     },
 
+    // 套用優惠券
     async applyCoupon() {
       if (!this.couponCode || this.isLoading) return
 

@@ -41,15 +41,21 @@ export default {
     },
   },
   methods: {
+    
+    // 更新數量值並確保在有效範圍內
     updateValue(value) {
       const newValue = Math.min(Math.max(Number(value) || 1, 1), this.max)
       this.$emit('update:modelValue', newValue)
     },
+
+    // 增加數量
     increase() {
       if (this.modelValue < this.max) {
         this.updateValue(this.modelValue + 1)
       }
     },
+
+    // 減少數量
     decrease() {
       if (this.modelValue > 1) {
         this.updateValue(this.modelValue - 1)

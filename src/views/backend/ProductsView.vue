@@ -109,14 +109,20 @@ export default {
     },
   },
   methods: {
+
+    // 格式化價格顯示
     formatPrice(price) {
       return new Intl.NumberFormat().format(price)
     },
+
+    // 顯示 Toast 通知
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast.show()
     },
+
+    // 刪除產品
     async deleteProduct(id) {
       try {
         await this.store.deleteProduct(id)
@@ -125,17 +131,23 @@ export default {
         this.showToast(error.message, 'danger')
       }
     },
+
+    // 開啟產品編輯/新增 Modal
     openModal(item = null) {
       if (this.$refs.productModal) {
         this.$refs.productModal.showModal(item)
       }
     },
+
+    // 分頁切換
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
       }
     },
   },
+  
+  // 生命週期：頁面創建時載入產品資料
   async created() {
     this.isLoading = true
     try {

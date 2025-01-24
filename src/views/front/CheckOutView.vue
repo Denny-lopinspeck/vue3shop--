@@ -129,17 +129,18 @@ export default {
   },
 
   methods: {
+    // 處理商品資料，計算每個商品的總價
     processProducts(products) {
       if (!products) return []
 
       return Object.entries(products).map(([id, item]) => ({
         id,
         ...item,
-        // 修正：從 product 物件中取得價格
         total: (item.product?.price || 0) * (item.qty || 0)
       }))
     },
 
+    // 根據訂單ID獲取訂單詳細資訊
     async getOrder(orderId) {
       this.isLoading = true
       try {
@@ -152,8 +153,7 @@ export default {
         const calculatedTotal = processedProducts.reduce((sum, item) => {
           const price = item.product?.price || 0
           const qty = item.qty || 0
-          const itemTotal = price * qty
-          return sum + itemTotal
+          return sum + (price * qty)
         }, 0)
 
         // 修改：只有在有使用優惠券時才計算折扣
@@ -191,6 +191,7 @@ export default {
       }
     },
 
+    // 處理付款流程
     async handlePayment() {
       if (!this.order || this.order.is_paid || this.isLoading) return
 
@@ -208,6 +209,8 @@ export default {
         this.isLoading = false
       }
     },
+
+    // 格式化價格顯示
     formatPrice(price) {
       return Number(price).toLocaleString()
     }

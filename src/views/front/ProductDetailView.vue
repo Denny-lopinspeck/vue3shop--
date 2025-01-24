@@ -137,6 +137,8 @@ export default {
     }
   },
   methods: {
+
+    // 獲取商品詳細資訊
     async fetchProduct() {
       try {
         const id = this.$route.params.id
@@ -155,6 +157,8 @@ export default {
         this.isLoading = false
       }
     },
+
+    // 加入購物車功能
     async addToCart() {
       try {
         const cartStore = useCartStore()
@@ -179,10 +183,14 @@ export default {
     },
   },
   computed: {
+    
+    // 計算所有商品圖片
     allImages() {
       if (!this.product) return []
       return [this.product.imageUrl, ...(this.product.imagesUrl || [])]
     },
+
+    // 計算商品可用庫存
     availableStock() {
       if (!this.product) return 0
       const cartStore = useCartStore()

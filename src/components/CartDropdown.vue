@@ -100,12 +100,18 @@ export default {
     },
   },
   methods: {
+    
+    // 格式化價格顯示
     formatPrice(price) {
       return price.toLocaleString()
     },
+
+    // 導向購物車頁面
     goToCart() {
       this.$router.push('/cart')
     },
+
+    // 切換下拉選單顯示
     toggleDropdown(event) {
       const dropdownEl = event.target.closest('.dropdown')
       const dropdown = new bootstrap.Dropdown(
@@ -113,6 +119,8 @@ export default {
       )
       dropdown.toggle()
     },
+
+    // 移除購物車商品
     async removeItem(id) {
       try {
         const result = await confirmDialog({
@@ -138,6 +146,8 @@ export default {
         this.isLoading = false
       }
     },
+
+    // 重新載入購物車資料
     async refreshCart() {
       try {
         this.isLoading = true

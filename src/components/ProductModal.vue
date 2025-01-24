@@ -247,11 +247,15 @@ export default {
     }
   },
   methods: {
+    
+    // 顯示提示訊息
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast.show()
     },
+
+    // 更新或新增商品
     async updateProduct() {
       if (!this.validateForm()) return
 
@@ -266,6 +270,8 @@ export default {
         this.showToast(error.message || '操作失敗', 'danger')
       }
     },
+
+    // 顯示商品編輯Modal
     showModal(item = null) {
       if (item) {
         this.tempProduct = JSON.parse(JSON.stringify(item))
@@ -288,10 +294,14 @@ export default {
       this.showValidation = false
       this.modal.show()
     },
+
+    // 創建商品圖片陣列
     createImages() {
       this.tempProduct.imagesUrl = []
       this.tempProduct.imagesUrl.push('')
     },
+
+    // 驗證表單資料
     validateForm() {
       this.showValidation = true
       return Object.keys(this.validationRules).every((field) =>

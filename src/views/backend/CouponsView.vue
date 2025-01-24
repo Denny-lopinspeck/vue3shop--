@@ -113,6 +113,7 @@ export default {
         const res = await this.store.deleteCoupon(id)
         this.showToast(res.success ? '刪除成功' : res.message, res.success ? 'success' : 'danger')
         if (res.success) {
+
           // 如果當前頁已無數據，返回上一頁
           await this.getCoupons(
             this.store.coupons.length === 1 ? Math.max(1, this.currentPage - 1) : this.currentPage,
@@ -140,6 +141,7 @@ export default {
         const res = await this.store.getCoupons(page, 5)
         if (res.success) {
           this.pagination = res.pagination
+          
           // 確保頁碼在有效範圍內
           if (page > this.pagination.total_pages) {
             this.currentPage = 1

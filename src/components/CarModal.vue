@@ -50,18 +50,24 @@ export default {
     }
   },
   methods: {
+    
+    // 顯示刪除商品Modal
     show() {
       this.quantity = 1
       this.$refs.dialog.showModal()
       this.$refs.dialog.classList.add('show')
       document.body.classList.add('modal-open')
     },
+
+    // 關閉Modal
     close() {
       this.$refs.dialog.close()
       this.$refs.dialog.classList.remove('show')
       document.body.classList.remove('modal-open')
       this.$emit('close')
     },
+
+    // 確認刪除商品
     confirm() {
       if (!this.item || !this.quantity) {
         Toast.fire({

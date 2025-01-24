@@ -95,7 +95,6 @@
 <script>
 import OrderModal from '@/components/OrderModal.vue'
 import { useOrdersStore } from '@/stores/orderStore'
-import { Toast } from 'bootstrap'
 export default {
   name: 'OrdersView',
   components: {
@@ -123,26 +122,23 @@ export default {
     },
   },
   methods: {
+    
+    // 格式化價格顯示
     formatPrice(price) {
       return `NT$ ${price.toLocaleString()}`
     },
+
+    // 格式化日期顯示
     formatDate(timestamp) {
       return new Date(timestamp * 1000).toLocaleDateString()
     },
-    openModal(item) {
-      this.$refs.orderModal.showModal(item)
-    },
+
+    // 切換測試/正式模式
     toggleTestMode() {
       this.store.toggleTestMode()
     },
-    showToast(message, type = 'bg-success') {
-      this.toastMessage = message
-      this.toastType = type
-      if (!this.toast) {
-        this.toast = new Toast(this.$refs.toast)
-      }
-      this.toast.show()
-    },
+
+    // 批量刪除所有訂單
     async deleteAllOrders() {
       try {
         if (confirm('確定要刪除全部訂單嗎？此動作無法復原！')) {

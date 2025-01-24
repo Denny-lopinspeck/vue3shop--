@@ -10,11 +10,17 @@ export const useAuthStore = defineStore('auth', {
     token: '',
   }),
   actions: {
+
+    // 登入處理
     async login(username, password) {
       try {
+
+        // 執行登入請求
         const res = await axiosInstance.post('/admin/signin', { username, password })
 
         if (res.data.success) {
+
+          // 設置 Token 和驗證狀態
           const { token, expired } = res.data
           document.cookie = `hexToken=${token}; expires=${new Date(expired)}; path=/`
           axiosInstance.defaults.headers.common.Authorization = token
@@ -27,11 +33,16 @@ export const useAuthStore = defineStore('auth', {
         throw error
       }
     },
+
+    // 登出處理
     async logout() {
       try {
+
+        // 清除所有驗證狀態和本地存儲
         this.isLoggedIn = false
         this.token = ''
 
+        // 清除各個 domain 和 path 下的 cookie
         const domains = [window.location.hostname, '']
         const paths = ['/', '/dashboard', '']
 
@@ -53,8 +64,12 @@ export const useAuthStore = defineStore('auth', {
         throw error
       }
     },
+
+    // 檢查用戶認證狀態
     async checkAuth() {
       try {
+        
+        // 獲取 Token
         const token = document.cookie.replace(
           /(?:(?:^|.*;\s*)hexToken\s*=\s*([^;]*).*$)|^.*$/,
           '$1',

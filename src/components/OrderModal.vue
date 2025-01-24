@@ -59,16 +59,19 @@ export default {
     }
   },
   methods: {
+    
+    // 格式化日期顯示
     formatDate(timestamp) {
       return new Date(timestamp * 1000).toLocaleDateString()
     },
+
+    // 顯示訂單詳情Modal
     showModal(item) {
       this.tempOrder = { ...item }
       this.modal.show()
     },
-    hideModal() {
-      this.modal.hide()
-    },
+
+    // 切換訂單付款狀態
     async togglePaidStatus() {
       try {
         const updatedOrder = {
@@ -85,6 +88,8 @@ export default {
         this.$emit('update-error', error.message || '更新失敗')
       }
     },
+
+    // 刪除訂單
     async deleteOrderItem() {
       try {
         if (confirm('確定要刪除此訂單嗎？')) {

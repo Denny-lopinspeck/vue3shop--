@@ -98,6 +98,8 @@ export default {
     }
   },
   methods: {
+    
+    // 從 API 獲取商品列表資料
     async getProducts() {
       if (this.isLoading) return
 
@@ -123,6 +125,8 @@ export default {
         this.isLoading = false
       }
     },
+
+    // 處理分頁切換
     async changePage(page) {
       if (
         page >= 1 &&
@@ -135,6 +139,8 @@ export default {
         await this.getProducts()
       }
     },
+
+    // 格式化價格顯示
     formatPrice(price) {
       return `NT$ ${price.toLocaleString()}`
     },

@@ -63,6 +63,7 @@ router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 
   try {
+    
     // 如果已登入要去登入頁，直接轉到產品管理
     if (to.path === '/login' && authStore.isLoggedIn) {
       return next('/dashboard/products')

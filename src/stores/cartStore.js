@@ -3,6 +3,7 @@ import axios from '@/utils/axios'
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
+    // 購物車狀態
     cart: {
       carts: [],
       total: 0,
@@ -11,15 +12,16 @@ export const useCartStore = defineStore('cart', {
         code: '',
         percent: 0,
         isApplied: false,
-        previewDiscount: 0
+        previewDiscount: 0  // 優惠券折扣預覽金額
       }
     },
     isLoading: false,
+    // 購物車驗證規則
     validationRules: {
-      minPrice: 0,
-      maxDiscount: 100,
-      minPurchaseAmount: 100,
-      maxQuantityPerItem: 99,
+      minPrice: 0,          // 最小價格
+      maxDiscount: 100,     // 最大折扣百分比
+      minPurchaseAmount: 100, // 最小購買金額
+      maxQuantityPerItem: 99  // 單品最大購買數量
     }
   }),
 
@@ -51,6 +53,7 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
+    // 驗證商品價格
     validatePrice(price) {
       return typeof price === 'number' &&
              price >= this.validationRules.minPrice &&
@@ -58,6 +61,7 @@ export const useCartStore = defineStore('cart', {
              Number.isFinite(price)
     },
 
+    // 驗證折扣金額
     validateDiscount(total, discount) {
       if (!this.validatePrice(total) || !this.validatePrice(discount)) {
         return false
@@ -66,7 +70,7 @@ export const useCartStore = defineStore('cart', {
       return discount >= 0 && discount <= total
     },
 
-
+    // 驗證商品數量
     validateQuantity(qty, stock) {
 
       console.log('Validating quantity:', { qty, stock, maxLimit: this.validationRules.maxQuantityPerItem })
@@ -87,7 +91,7 @@ export const useCartStore = defineStore('cart', {
              qty <= this.validationRules.maxQuantityPerItem
     },
 
-
+    // 加入購物車
     async addToCart(productId, qty = 1) {
       try {
         const currentItem = this.cart.carts.find(item => item.product_id === productId)
@@ -185,18 +189,21 @@ export const useCartStore = defineStore('cart', {
       return await this.getCart()
     },
 
+    // 建立訂單
     async createOrder(orderData) {
       try {
+        
+        // 購物車檢查
         if (!this.cart.carts?.length) {
           throw new Error('購物車內無商品')
         }
 
-
+        // 驗證訂單金額
         if (!this.validatePrice(this.cart.final_total)) {
           throw new Error('訂單金額異常')
         }
 
-
+        // 檢查每個商品的庫存狀況
         for (const item of this.cart.carts) {
           const stock = Number(item.product?.unit || 0)
           console.log('Checking item:', {
@@ -213,7 +220,6 @@ export const useCartStore = defineStore('cart', {
             )
           }
         }
-
 
         const finalOrderData = {
           ...orderData
@@ -253,7 +259,6 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-
     async removeItemQuantity(cartId, productId, removeQty) {
       try {
         const cartItem = this.cart.carts.find((item) => item.id === cartId)
@@ -278,9 +283,11 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
+    // 套用優惠券
     async applyCoupon(code) {
       try {
 
+        // 呼叫 API 驗證優惠券
         const response = await axios.post(`/api/${import.meta.env.VITE_APP_PATH}/coupon`, {
           data: { code }
         })
@@ -289,6 +296,7 @@ export const useCartStore = defineStore('cart', {
           throw new Error(response.data.message || '優惠券無效')
         }
 
+        // 計算折扣金額並更新狀態
         const percent = response.data.data.percent || 0
         this.cart.coupon = {
           code,
@@ -296,7 +304,6 @@ export const useCartStore = defineStore('cart', {
           isApplied: true,
           previewDiscount: Math.floor(this.cart.total * (percent / 100))
         }
-
 
         console.log('優惠券套用結果:', {
           code,
