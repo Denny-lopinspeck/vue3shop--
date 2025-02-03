@@ -1,5 +1,7 @@
 <template>
+  <!-- 主佈局 -->
   <MainLayout>
+    <!-- 路由視圖 -->
     <RouterView />
   </MainLayout>
 </template>

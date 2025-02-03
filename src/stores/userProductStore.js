@@ -16,6 +16,7 @@ export const useUserProductStore = defineStore('userProduct', {
   }),
 
   actions: {
+    // 獲取商品列表，並根據頁碼進行分頁
     async getProducts(page = 1) {
       this.isLoading = true
       try {
@@ -54,15 +55,13 @@ export const useUserProductStore = defineStore('userProduct', {
       }
     },
 
+    // 獲取所有商品
     async getAllProducts() {
-      try {
-        const response = await axios.get(`/api/${import.meta.env.VITE_APP_PATH}/products/all`)
-        return response.data
-      } catch (error) {
-        throw error
-      }
+      const response = await axios.get(`/api/${import.meta.env.VITE_APP_PATH}/products/all`)
+      return response.data
     },
 
+    // 根據商品ID獲取商品詳情
     async getProduct(id) {
       this.isLoading = true
       try {

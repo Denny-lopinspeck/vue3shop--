@@ -51,19 +51,16 @@
               </tr>
             </tbody>
             <tfoot class="table-light">
-              <tr>
-                <td colspan="2" class="text-end">小計：</td>
-                <td>NT$ {{ formatPrice(cartStore.displayTotal) }}</td>
-              </tr>
+
               <tr v-if="cartStore.cart.coupon.isApplied">
                 <td colspan="2" class="text-end text-success">
-                  預估折扣 ({{ cartStore.cart.coupon.percent }}%)：
+                  折扣金額 ({{ cartStore.cart.coupon.percent }}%)：
                   <small>(實際折扣以結帳金額為準)</small>
                 </td>
                 <td class="text-success">-NT$ {{ formatPrice(cartStore.displayDiscount) }}</td>
               </tr>
               <tr class="fw-bold">
-                <td colspan="2" class="text-end">預估結帳金額：</td>
+                <td colspan="2" class="text-end">結帳金額：</td>
                 <td>NT$ {{ formatPrice(cartStore.displayFinalTotal) }}</td>
               </tr>
             </tfoot>
@@ -72,96 +69,61 @@
       </div>
     </div>
 
-    <div v-if="cartItems.length" class="mt-4">
-      <div v-if="showOrderForm" class="row justify-content-center">
-        <div class="col-md-8">
-          <div class="card mb-4">
-            <div class="card-body">
-              <h5 class="card-title mb-3">優惠券</h5>
-              <div class="d-flex gap-2">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="couponCode"
-                  placeholder="請輸入優惠券代碼"
-                  :disabled="isLoading"
-                />
-                <button
-                  class="btn btn-outline-primary"
-                  @click="applyCoupon"
-                  :disabled="isLoading || !couponCode"
-                >
-                  {{ isLoading ? '套用中...' : '套用優惠券' }}
-                </button>
-              </div>
-              <div v-if="discount > 0" class="mt-2 text-success">
-                <small>已套用優惠券，折扣金額：NT$ {{ formatPrice(discount) }}</small>
-              </div>
-            </div>
-          </div>
 
-          <div class="card">
-            <div class="card-body">
-              <h4 class="card-title mb-4">收件資訊</h4>
-              <form @submit.prevent="submitOrder" class="row g-3">
-                <div class="col-md-6">
-                  <label for="name" class="form-label">姓名</label>
-                  <input type="text" class="form-control" id="name" v-model="form.name" required />
-                </div>
-                <div class="col-md-6">
-                  <label for="tel" class="form-label">電話</label>
-                  <input type="tel" class="form-control" id="tel" v-model="form.tel" required />
-                </div>
-                <div class="col-12">
-                  <label for="email" class="form-label">Email</label>
-                  <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    v-model="form.email"
-                    required
-                  />
-                </div>
-                <div class="col-12">
-                  <label for="address" class="form-label">地址</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="address"
-                    v-model="form.address"
-                    required
-                  />
-                </div>
-                <div class="col-12">
-                  <label for="message" class="form-label">留言</label>
-                  <textarea
-                    class="form-control"
-                    id="message"
-                    v-model="form.message"
-                    rows="3"
-                  ></textarea>
-                </div>
-                <div class="col-12 text-end">
-                  <button
-                    type="button"
-                    class="btn btn-secondary me-2"
-                    @click="showOrderForm = false"
-                  >
-                    返回購物車
-                  </button>
-                  <button type="submit" class="btn btn-primary" :disabled="isLoading">
-                    {{ isLoading ? '處理中...' : '確認送出' }}
-                  </button>
-                </div>
-              </form>
-            </div>
+
+    <!-- 新增優惠券輸入區塊 -->
+    <div v-if="cartItems.length" class="mt-4">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="mb-3">優惠券</h3>
+          <div class="input-group">
+            <input type="text" class="form-control" placeholder="輸入優惠券代碼" v-model="couponCode">
+            <button type="button" class="btn btn-outline-secondary" @click="applyCoupon" :disabled="isLoading">
+              套用優惠券
+            </button>
           </div>
         </div>
       </div>
-      <div class="text-end" v-else>
-        <button class="btn btn-primary" @click="showOrderForm = true">前往結帳</button>
+    </div>
+
+    <!-- 保留訂購資訊表單 -->
+    <div v-if="cartItems.length" class="mt-4">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="mb-4">訂購資訊</h3>
+          <form @submit.prevent="submitOrder">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">姓名 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="form.name" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" v-model="form.email" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">電話 <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" v-model="form.tel" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">地址 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="form.address" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label">訂單備註</label>
+                <textarea class="form-control" v-model="form.message" rows="3"></textarea>
+              </div>
+            </div>
+            <div class="text-end mt-4">
+              <button type="submit" class="btn btn-primary" :disabled="isLoading">
+                {{ isLoading ? '處理中...' : '確認結帳' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
+
   </div>
 
   <CarModal
@@ -176,6 +138,7 @@
 <script>
 import { useCartStore } from '@/stores/cartStore'
 import CarModal from '@/components/CarModal.vue'
+// ...移除 OrderForm import...
 import Swal from 'sweetalert2'
 
 const Toast = Swal.mixin({
@@ -186,12 +149,33 @@ const Toast = Swal.mixin({
   timerProgressBar: true,
 })
 
+function showToast(icon, title) {
+  Toast.fire({
+    icon,
+    title,
+  })
+}
+
+function validateForm(form) {
+  const { name, email, tel, address } = form
+  if (!name?.trim() || !email?.trim() || !tel?.trim() || !address?.trim()) {
+    showToast('warning', '請填寫完整的訂購資訊')
+    return false
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    showToast('warning', '請輸入有效的 Email 格式')
+    return false
+  }
+  return true
+}
+
 export default {
   name: 'CartView',
   components: {
     CarModal,
   },
-
   data() {
     return {
       cartStore: useCartStore(),
@@ -211,34 +195,23 @@ export default {
       discount: 0,
     }
   },
-
   async created() {
-    try {
-      await this.getCartData()
-    } catch (error) {
-      Toast.fire({
-        icon: 'error',
-        title: '載入購物車失敗'
-      })
-    }
-  },
-
-  beforeUnmount() {
-    try {
-
-      this.selectedItem = null
-      this.couponCode = ''
-      this.discount = 0
-
-
-      if (this.$refs.deleteDialog?.close) {
-        this.$refs.deleteDialog.close()
+    this.cartStore = useCartStore()
+    // 若 localStorage 中有未結帳購物車資料，先更新 store
+    const savedCart = localStorage.getItem('cart-data')
+    if (savedCart) {
+      try {
+        this.cartStore.$patch({ cart: JSON.parse(savedCart) })
+      } catch (e) {
+        console.error('載入購物車資料失敗', e)
       }
-    } catch (error) {
-      console.error('組件卸載清理失敗:', error)
     }
+    // 呼叫 API 取得最新購物車資料（當有新增產品時）
+    this.refreshCart()
   },
-
+  beforeUnmount() {
+    this.cleanupComponent()
+  },
   computed: {
     cartItems() {
       return this.cartStore?.cart?.carts || []
@@ -250,101 +223,97 @@ export default {
       return this.cartItems.length > 0
     },
   },
-
   methods: {
-
-    // 取得購物車資料
-    async getCartData() {
+    /**
+     * 載入購物車資料
+     */
+    async loadCartData() {
       if (this.isLoading) return
 
       try {
         this.isLoading = true
         const result = await this.cartStore.getCart()
-       
+
         if (!result.success) {
           throw new Error('購物車資料載入失敗')
         }
 
-
         if (this.cartStore.cart.coupon?.isApplied) {
           this.discount = this.cartStore.displayDiscount
         }
-
-      } catch (error) {
-        console.error('獲取購物車資料失敗:', error)
-        Toast.fire({
-          icon: 'error',
-          title: '獲取購物車資料失敗'
-        })
+      } catch {
+        showToast('error', '獲取購物車資料失敗')
       } finally {
         this.isLoading = false
       }
     },
+    /**
+     * 清理元件資源
+     */
+    cleanupComponent() {
+      this.selectedItem = null
+      this.couponCode = ''
+      this.discount = 0
 
-    getAvailableStock(item) {
-      return item.product.unit || 0
+      if (this.$refs.deleteDialog?.close) {
+        this.$refs.deleteDialog.close()
+      }
     },
-
-    // 更新商品數量
+    /**
+     * 更新商品數量
+     * @param {Object} item - 商品物件
+     */
     async updateQuantity(item) {
       if (!item || item.qty < 1) {
         item.qty = 1
         return
       }
 
-      // 檢查庫存限制
       const availableStock = item.product.unit
       if (item.qty > availableStock) {
         item.qty = availableStock
-        Toast.fire({
-          icon: 'warning',
-          title: `數量不能超過商品庫存 ${availableStock}`
-        })
+        showToast('warning', `數量不能超過商品庫存 ${availableStock}`)
         return
       }
 
       try {
         this.isLoading = true
         await this.cartStore.updateCart(item.id, item.product_id, item.qty)
-      } catch (error) {
-        Toast.fire({
-          icon: 'error',
-          title: '更新數量失敗'
-        })
-        await this.getCartData()
+      } catch {
+        showToast('error', '更新數量失敗')
+        await this.loadCartData()
       } finally {
         this.isLoading = false
       }
     },
-
+    /**
+     * 移除單一商品 (需使用者確認)
+     * @param {number} id - 商品的 ID
+     */
     async removeItem(id) {
       const result = await Swal.fire({
         title: '確定要移除此商品嗎？',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: '確定移除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
       })
 
       if (result.isConfirmed) {
         try {
           this.isLoading = true
           await this.cartStore.removeCartItem(id)
-          Toast.fire({
-            icon: 'success',
-            title: '商品已移除'
-          })
+          showToast('success', '商品已移除')
         } catch {
-          Toast.fire({
-            icon: 'error',
-            title: '移除商品失敗'
-          })
+          showToast('error', '移除商品失敗')
         } finally {
           this.isLoading = false
         }
       }
     },
-
+    /**
+     * 清空購物車所有商品
+     */
     async clearCart() {
       const result = await Swal.fire({
         title: '確定要清空購物車嗎？',
@@ -352,7 +321,7 @@ export default {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: '確定清空',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
       })
 
       if (result.isConfirmed) {
@@ -360,23 +329,19 @@ export default {
           this.isLoading = true
           await this.cartStore.clearCart()
           this.discount = 0
-          Toast.fire({
-            icon: 'success',
-            title: '購物車已清空'
-          })
+          showToast('success', '購物車已清空')
         } catch {
-          Toast.fire({
-            icon: 'error',
-            title: '清空購物車失敗'
-          })
+          showToast('error', '清空購物車失敗')
         } finally {
           this.isLoading = false
         }
       }
     },
-
+    /**
+     * 提交訂單 (表單驗證通過時)
+     */
     async submitOrder() {
-      if (!this.validateForm()) return
+      if (!validateForm(this.form)) return
 
       try {
         this.isLoading = true
@@ -393,52 +358,28 @@ export default {
         const result = await this.cartStore.createOrder(orderData)
         if (result.success) {
           this.$router.push(`/checkout/${result.orderId}`)
-          Toast.fire({
-            icon: 'success',
-            title: '訂單建立成功！'
-          })
+          showToast('success', '訂單建立成功！')
         }
       } catch {
-        Toast.fire({
-          icon: 'error',
-          title: '建立訂單失敗，請稍後再試'
-        })
+        showToast('error', '建立訂單失敗，請稍後再試')
       } finally {
         this.isLoading = false
       }
     },
-
-    // 驗證訂單表單
-    validateForm() {
-      const { name, email, tel, address } = this.form
-      // 檢查必填欄位
-      if (!name?.trim() || !email?.trim() || !tel?.trim() || !address?.trim()) {
-        Toast.fire({
-          icon: 'warning',
-          title: '請填寫完整的訂購資訊'
-        })
-        return false
-      }
-
-      // 驗證 Email 格式
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
-        Toast.fire({
-          icon: 'warning',
-          title: '請輸入有效的 Email 格式'
-        })
-        return false
-      }
-      return true
-    },
-
+    /**
+     * 開啟刪除確認對話框
+     * @param {Object} item - 要刪除的商品
+     */
     openDeleteDialog(item) {
       if (!this.$refs.deleteDialog) return
 
       this.selectedItem = item
       this.$refs.deleteDialog.show()
     },
-
+    /**
+     * 處理刪除確認動作
+     * @param {Object} param0 - 包含 id、productId 和 qty 的物件
+     */
     async handleDeleteConfirm({ id, productId, qty }) {
       if (!this.cartStore) return
 
@@ -450,21 +391,16 @@ export default {
           this.$refs.deleteDialog.close()
         }
 
-        Toast.fire({
-          icon: 'success',
-          title: '成功刪除商品數量'
-        })
-      } catch (error) {
-        Toast.fire({
-          icon: 'error',
-          title: '刪除失敗'
-        })
+        showToast('success', '成功刪除商品數量')
+      } catch {
+        showToast('error', '刪除失敗')
       } finally {
         this.isLoading = false
       }
     },
-
-    // 套用優惠券
+    /**
+     * 套用優惠券至購物車
+     */
     async applyCoupon() {
       if (!this.couponCode || this.isLoading) return
 
@@ -474,24 +410,32 @@ export default {
 
         if (result?.success) {
           this.discount = this.cartStore.displayDiscount
-          Toast.fire({
-            icon: 'success',
-            title: `優惠券套用成功，折扣 ${this.cartStore.cart.coupon.percent}%`
-          })
+          showToast('success', `優惠券套用成功，折扣 ${this.cartStore.cart.coupon.percent}%`)
         }
-      } catch (error) {
-        Toast.fire({
-          icon: 'error',
-          title: error?.message || '優惠券無效'
-        })
+      } catch {
+        showToast('error', '優惠券無效')
         this.discount = 0
       } finally {
         this.isLoading = false
       }
     },
-
+    /**
+     * 格式化價格為區域字串
+     * @param {number} price - 需要格式化的價格
+     * @returns {string} 格式化後的價格字串
+     */
     formatPrice(price) {
       return Number(price).toLocaleString()
+    },
+    /**
+     * 更新購物車資料
+     */
+    async refreshCart() {
+      try {
+        await this.cartStore.getCart()
+      } catch (error) {
+        console.error('更新購物車失敗:', error)
+      }
     },
   },
 }

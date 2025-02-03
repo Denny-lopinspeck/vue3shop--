@@ -54,7 +54,9 @@
                 <span class="text-danger fw-bold">NT$ {{ formatPrice(cart.final_total) }}</span>
               </div>
               <div class="d-grid gap-2">
-                <router-link to="/cart" class="btn btn-primary btn-sm">查看購物車</router-link>
+                <router-link to="/cart" class="btn btn-primary btn-sm" @click="closeDropdown">
+                  查看購物車
+                </router-link>
               </div>
             </div>
           </div>
@@ -68,6 +70,8 @@
 import { useCartStore } from '@/stores/cartStore'
 import { Toast, confirmDialog } from '@/utils/toast'
 
+import { Dropdown } from 'bootstrap'
+
 export default {
   name: 'CartDropdown',
   emits: ['update-cart', 'error'],
@@ -78,18 +82,23 @@ export default {
     }
   },
   computed: {
+    // 獲取購物車資料
     cart() {
       return this.cartStore?.cart || { carts: [], total: 0, final_total: 0 }
     },
+    // 獲取購物車商品列表
     cartItems() {
       return this.cart.carts || []
     },
+    // 檢查購物車是否有商品
     hasItems() {
       return this.cartItems.length > 0
     },
+    // 計算購物車商品數量
     cartItemCount() {
       return this.cartItems.reduce((sum, item) => sum + item.qty, 0)
     },
+    // 判斷是否顯示購物車
     shouldShowCart() {
       const currentPath = this.$route.path
 
@@ -100,27 +109,44 @@ export default {
     },
   },
   methods: {
-    
-    // 格式化價格顯示
+    /**
+     * 格式化價格數字
+     * @param {number} price
+     * @returns {string} 格式化價格
+     */
     formatPrice(price) {
       return price.toLocaleString()
     },
 
-    // 導向購物車頁面
+    /**
+     * 導向購物車頁面
+     */
     goToCart() {
-      this.$router.push('/cart')
+      try {
+        this.$router.push('/cart').catch((error) => {
+          console.error('Navigation Error:', error)
+        })
+      } catch (error) {
+        console.error('Navigation Error:', error)
+      }
     },
 
-    // 切換下拉選單顯示
+    /**
+     * 切換下拉選單顯示
+     * @param {Event} event 點擊事件
+     */
     toggleDropdown(event) {
       const dropdownEl = event.target.closest('.dropdown')
-      const dropdown = new bootstrap.Dropdown(
+      const dropdown = new Dropdown(
         dropdownEl.querySelector('[data-bs-toggle="dropdown"]'),
       )
       dropdown.toggle()
     },
 
-    // 移除購物車商品
+    /**
+     * 移除購物車商品
+     * @param {number} id 商品 id
+     */
     async removeItem(id) {
       try {
         const result = await confirmDialog({
@@ -137,7 +163,7 @@ export default {
           })
           this.$emit('update-cart')
         }
-      } catch (error) {
+      } catch {
         Toast.fire({
           icon: 'error',
           title: '刪除商品失敗'
@@ -147,7 +173,9 @@ export default {
       }
     },
 
-    // 重新載入購物車資料
+    /**
+     * 重新載入購物車資料
+     */
     async refreshCart() {
       try {
         this.isLoading = true
@@ -158,6 +186,17 @@ export default {
         this.isLoading = false
       }
     },
+
+    /**
+     * 關閉下拉選單
+     */
+    closeDropdown() {
+      const dropdownEl = this.$el.querySelector('.dropdown-menu')
+      if (dropdownEl.classList.contains('show')) {
+        const dropdown = Dropdown.getInstance(dropdownEl)
+        dropdown?.hide()
+      }
+    }
   },
   created() {
     this.cartStore = useCartStore()

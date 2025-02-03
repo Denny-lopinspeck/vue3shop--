@@ -34,19 +34,19 @@
 import { useAuthStore } from '@/stores/authStore'
 
 export default {
-  name: 'Navbar',
+  name: 'ShopNavbar',
   data() {
     return {
-      authStore: useAuthStore(),
-      isNavOpen: false,
+      authStore: useAuthStore(), // 使用 authStore 來管理認證狀態
+      isNavOpen: false, // 控制導航欄是否展開
     }
   },
   methods: {
     async logout() {
       try {
-        await this.authStore.logout()
+        await this.authStore.logout() // 執行登出操作
       } catch (error) {
-        console.error('登出失敗:', error)
+        console.error('登出失敗:', error) // 處理登出失敗的情況
       }
     },
   },

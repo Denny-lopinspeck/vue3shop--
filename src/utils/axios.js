@@ -2,9 +2,19 @@ import axios from 'axios'
 import router from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 
+// 獲取 API 基本 URL
 const apiUrl = import.meta.env.VITE_APP_API.endsWith('/')
   ? import.meta.env.VITE_APP_API
   : `${import.meta.env.VITE_APP_API}/`
+
+// 確認這裡的 VITE_APP_PATH 與伺服器路徑一致：
+/*
+  範例：若後端為
+  https://vue3-course-api.hexschool.io/v2/api/vue3-course-api
+  則需確保：
+  VITE_APP_API=https://vue3-course-api.hexschool.io
+  VITE_APP_PATH=vue3-course-api
+*/
 
 // 建立 axios 實例，設定基本配置
 const axiosInstance = axios.create({
@@ -17,12 +27,20 @@ const axiosInstance = axios.create({
   },
 })
 
-// 請求攔截器：在發送請求前自動添加 token
+/**
+ * 從 cookie 中獲取 token
+ * @returns {string} token
+ */
+const getTokenFromCookie = () => {
+  return document.cookie.replace(/(?:(?:^|.*;\s*)hexToken\s*=\s*([^;]*).*$)|^.*$/, '$1')
+}
+
+/**
+ * 請求攔截器：在發送請求前自動添加 token
+ */
 axiosInstance.interceptors.request.use(
   (config) => {
-    
-    // 從 cookie 中獲取 token
-    const token = document.cookie.replace(/(?:(?:^|.*;\s*)hexToken\s*=\s*([^;]*).*$)|^.*$/, '$1')
+    const token = getTokenFromCookie()
     if (token) {
       config.headers.Authorization = token
     }
@@ -34,7 +52,9 @@ axiosInstance.interceptors.request.use(
   },
 )
 
-// 響應攔截器：處理 401 未授權錯誤，自動登出並跳轉
+/**
+ * 響應攔截器：處理 401 未授權錯誤，自動登出並跳轉
+ */
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {

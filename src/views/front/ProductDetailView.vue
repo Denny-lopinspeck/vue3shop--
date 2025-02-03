@@ -117,7 +117,7 @@
 <script>
 import { useUserProductStore } from '@/stores/userProductStore'
 import { useCartStore } from '@/stores/cartStore'
-import { Toast } from '@/utils/toast'
+import { Toast as BSToast } from 'bootstrap'
 import QuantitySelector from '@/components/QuantitySelector.vue'
 
 export default {
@@ -137,13 +137,14 @@ export default {
     }
   },
   methods: {
-
-    // 獲取商品詳細資訊
+    /**
+     * 獲取商品詳細資訊
+     */
     async fetchProduct() {
+      const id = this.$route.params.id
+      const store = useUserProductStore()
+      this.isLoading = true
       try {
-        const id = this.$route.params.id
-        const store = useUserProductStore()
-        this.isLoading = true
         await store.getProduct(id)
         this.product = store.currentProduct
         if (this.product) {
@@ -158,39 +159,47 @@ export default {
       }
     },
 
-    // 加入購物車功能
+    /**
+     * 加入購物車功能
+     */
     async addToCart() {
+      const cartStore = useCartStore()
       try {
-        const cartStore = useCartStore()
         const result = await cartStore.addToCart(this.product.id, this.quantity)
-        Toast.fire({
-          icon: 'success',
-          title: result.message || '已加入購物車'
-        })
+        this.showToast(result.message || '已加入購物車', 'bg-success')
         this.quantity = 1
       } catch (error) {
-        Toast.fire({
-          icon: 'error',
-          title: error.message || '加入購物車失敗'
-        })
+        this.showToast(error.message || '加入購物車失敗', 'bg-danger')
       }
     },
+
+    /**
+     * 顯示提示訊息
+     * @param {string} message - 提示訊息
+     * @param {string} [type='bg-success'] - 提示訊息類型
+     */
     showToast(message, type = 'bg-success') {
       this.toastMessage = message
       this.toastType = type
-      const toast = new Toast(this.$refs.toast)
-      toast.show()
+      const toastEl = this.$refs.toast
+      const bsToast = new BSToast(toastEl)
+      bsToast.show()
     },
   },
   computed: {
-    
-    // 計算所有商品圖片
+    /**
+     * 計算所有商品圖片
+     * @returns {Array} - 所有商品圖片
+     */
     allImages() {
       if (!this.product) return []
       return [this.product.imageUrl, ...(this.product.imagesUrl || [])]
     },
 
-    // 計算商品可用庫存
+    /**
+     * 計算商品可用庫存
+     * @returns {number} - 可用庫存數量
+     */
     availableStock() {
       if (!this.product) return 0
       const cartStore = useCartStore()

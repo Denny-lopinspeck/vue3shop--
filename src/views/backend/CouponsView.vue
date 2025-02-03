@@ -1,5 +1,5 @@
 <template>
-  <div class="" text-end>
+  <div class="text-end">
     <button class="btn btn-primary" type="button" @click="openModal()">新增優惠券</button>
   </div>
   <div v-if="isLoading" class="text-center mt-5">
@@ -62,7 +62,6 @@
     @update-success="handleSuccess"
     @update-failed="handleError"
   ></CouponModal>
-
   <div class="toast-container position-fixed top-0 start-50 translate-middle-x pt-4">
     <div
       class="toast align-items-center text-white border-0"
@@ -82,7 +81,7 @@
 </template>
 
 <script>
-import { useCouponStore } from '../../stores/CouponStore'
+import { useCouponStore } from '../../stores/couponStore'
 import CouponModal from '../../components/CouponModal.vue'
 import { Toast } from 'bootstrap'
 
@@ -102,9 +101,17 @@ export default {
     }
   },
   methods: {
+    /**
+     * 打開模態框
+     * @param {Object} [item] 優惠券資料（選填）
+     */
     openModal(item) {
       this.$refs.couponModal?.openModal(item)
     },
+    /**
+     * 刪除優惠券
+     * @param {number|string} id 優惠券 ID
+     */
     async deleteCoupon(id) {
       if (!id || !confirm('確定要刪除此優惠券嗎？')) return
 
@@ -113,8 +120,6 @@ export default {
         const res = await this.store.deleteCoupon(id)
         this.showToast(res.success ? '刪除成功' : res.message, res.success ? 'success' : 'danger')
         if (res.success) {
-
-          // 如果當前頁已無數據，返回上一頁
           await this.getCoupons(
             this.store.coupons.length === 1 ? Math.max(1, this.currentPage - 1) : this.currentPage,
           )
@@ -125,14 +130,28 @@ export default {
         this.isLoading = false
       }
     },
+    /**
+     * 格式化日期
+     * @param {number} timestamp 時間戳（秒）
+     * @returns {string} 格式化日期字串
+     */
     formatDate(timestamp) {
       return new Date(timestamp * 1000).toLocaleDateString()
     },
+    /**
+     * 顯示提示訊息
+     * @param {string} message 提示文字
+     * @param {string} [type='success'] 類型（決定顏色）
+     */
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast?.show()
     },
+    /**
+     * 獲取優惠券列表
+     * @param {number} [page=1] 頁碼
+     */
     async getCoupons(page = 1) {
       if (this.isLoading) return
 
@@ -141,7 +160,6 @@ export default {
         const res = await this.store.getCoupons(page, 5)
         if (res.success) {
           this.pagination = res.pagination
-          
           // 確保頁碼在有效範圍內
           if (page > this.pagination.total_pages) {
             this.currentPage = 1
@@ -152,16 +170,28 @@ export default {
         this.isLoading = false
       }
     },
+    /**
+     * 切換頁面
+     * @param {number} page 目標頁碼
+     */
     async changePage(page) {
       if (page > 0 && page <= this.pagination.total_pages) {
         this.currentPage = page
         await this.getCoupons(page)
       }
     },
+    /**
+     * 處理成功操作
+     * @param {string} action 操作名稱
+     */
     handleSuccess(action) {
       this.showToast(`${action}成功！`)
       this.getCoupons(this.currentPage)
     },
+    /**
+     * 處理失敗操作
+     * @param {string} message 錯誤訊息
+     */
     handleError(message) {
       this.showToast(message, 'danger')
     },

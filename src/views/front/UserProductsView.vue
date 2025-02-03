@@ -98,16 +98,17 @@ export default {
     }
   },
   methods: {
-    
-    // 從 API 獲取商品列表資料
-    async getProducts() {
+    /**
+     * 從 API 獲取商品列表資料
+     */
+    async getProducts(currentPage) {
       if (this.isLoading) return
 
       try {
         this.isLoading = true
         this.error = null
         const store = useUserProductStore()
-        const result = await store.getProducts(this.pagination.currentPage)
+        const result = await store.getProducts(currentPage)
 
         if (result.success) {
           this.products = result.products
@@ -126,7 +127,9 @@ export default {
       }
     },
 
-    // 處理分頁切換
+    /**
+     * 處理分頁切換
+     */
     async changePage(page) {
       if (
         page >= 1 &&
@@ -136,22 +139,28 @@ export default {
       ) {
         this.pagination.currentPage = page
         window.scrollTo({ top: 0, behavior: 'smooth' })
-        await this.getProducts()
+        await this.getProducts(page)
       }
     },
 
-    // 格式化價格顯示
+    /**
+     * 格式化價格顯示
+     */
     formatPrice(price) {
       return `NT$ ${price.toLocaleString()}`
     },
   },
   watch: {
+    /**
+     * 當路由改變時重新獲取商品列表
+     */
     $route() {
-      this.getProducts()
+      this.getProducts(this.pagination.currentPage)
     },
   },
   mounted() {
-    this.getProducts()
+    // 組件掛載後獲取商品列表
+    this.getProducts(this.pagination.currentPage)
   },
 }
 </script>

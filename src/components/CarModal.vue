@@ -50,8 +50,9 @@ export default {
     }
   },
   methods: {
-    
-    // 顯示刪除商品Modal
+    /**
+     * 顯示刪除商品 Modal
+     */
     show() {
       this.quantity = 1
       this.$refs.dialog.showModal()
@@ -59,7 +60,9 @@ export default {
       document.body.classList.add('modal-open')
     },
 
-    // 關閉Modal
+    /**
+     * 關閉 Modal
+     */
     close() {
       this.$refs.dialog.close()
       this.$refs.dialog.classList.remove('show')
@@ -67,7 +70,9 @@ export default {
       this.$emit('close')
     },
 
-    // 確認刪除商品
+    /**
+     * 確認刪除指定數量商品
+     */
     confirm() {
       if (!this.item || !this.quantity) {
         Toast.fire({
@@ -76,10 +81,11 @@ export default {
         })
         return
       }
+      const { item, quantity } = this
       this.$emit('confirm', {
-        id: this.item.id,
-        productId: this.item.product_id,
-        qty: this.quantity,
+        id: item.id,
+        productId: item.product_id,
+        qty: quantity,
       })
     },
   },

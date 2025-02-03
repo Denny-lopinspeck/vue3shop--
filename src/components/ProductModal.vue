@@ -35,11 +35,8 @@
               </div>
               <img :src="tempProduct.imageUrl" class="img-fluid" alt="" />
               <div class="mt-5">
-                <template
-                  v-if="Array.isArray(tempProduct.imagesUrl)"
-                  v-for="(image, key) in tempProduct.imagesUrl"
-                  :key="key"
-                >
+                <template v-if="Array.isArray(tempProduct.imagesUrl)">
+                  <template v-for="(image, key) in tempProduct.imagesUrl" :key="key">
                   <div class="mb-3 input-group">
                     <input
                       type="url"
@@ -64,6 +61,7 @@
                     新增圖片
                   </button>
                 </div>
+                </template>
               </div>
             </div>
             <div class="col-sm-8">
@@ -214,12 +212,12 @@ import { useProductStore } from '@/stores/productStore'
 import { Modal, Toast } from 'bootstrap'
 
 export default {
-  setup() {
-    const store = useProductStore()
-    return { store }
-  },
+  // 移除 setup()，統一使用 Options API
+  name: 'ProductModal',
   data() {
     return {
+      // 初始化 store
+      store: useProductStore(),
       modal: null,
       toast: null,
       tempProduct: {
@@ -247,15 +245,20 @@ export default {
     }
   },
   methods: {
-    
-    // 顯示提示訊息
+    /**
+     * 顯示提示訊息
+     * @param {string} message 提示內容
+     * @param {string} type 提示類型（success/danger）
+     */
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast.show()
     },
 
-    // 更新或新增商品
+    /**
+     * 更新或新增商品
+     */
     async updateProduct() {
       if (!this.validateForm()) return
 
@@ -271,7 +274,10 @@ export default {
       }
     },
 
-    // 顯示商品編輯Modal
+    /**
+     * 顯示商品編輯 Modal
+     * @param {Object|null} item 商品資料
+     */
     showModal(item = null) {
       if (item) {
         this.tempProduct = JSON.parse(JSON.stringify(item))
@@ -295,13 +301,18 @@ export default {
       this.modal.show()
     },
 
-    // 創建商品圖片陣列
+    /**
+     * 創建商品圖片陣列
+     */
     createImages() {
       this.tempProduct.imagesUrl = []
       this.tempProduct.imagesUrl.push('')
     },
 
-    // 驗證表單資料
+    /**
+     * 驗證表單資料
+     * @returns {boolean} 是否通過驗證
+     */
     validateForm() {
       this.showValidation = true
       return Object.keys(this.validationRules).every((field) =>

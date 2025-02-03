@@ -69,7 +69,7 @@
 
 <script>
 import { Modal } from 'bootstrap'
-import { useCouponStore } from '../stores/CouponStore'
+import { useCouponStore } from '../stores/couponStore'
 
 export default {
   name: 'CouponModal',
@@ -105,6 +105,10 @@ export default {
     this.modalInstance = new Modal(this.$refs.modal)
   },
   methods: {
+    /**
+     * 驗證表單資料
+     * @returns {boolean} 表單是否有效
+     */
     validateForm() {
       const validations = {
         title: () => {
@@ -136,31 +140,39 @@ export default {
 
       return isValid
     },
+    /**
+     * 提交表單資料
+     */
     async submit() {
       if (!this.validateForm()) return
 
       try {
+        const { tempCoupon, date, isNew, store } = this
         const submitData = {
-          ...this.tempCoupon,
-          is_enabled: this.tempCoupon.is_enabled ? 1 : 0,
-          percent: Number(this.tempCoupon.percent),
-          due_date: Math.floor(new Date(this.date).getTime() / 1000),
+          ...tempCoupon,
+          is_enabled: tempCoupon.is_enabled ? 1 : 0,
+          percent: Number(tempCoupon.percent),
+          due_date: Math.floor(new Date(date).getTime() / 1000),
         }
 
-        const res = await (this.isNew
-          ? this.store.createCoupon(submitData)
-          : this.store.updateCoupon(submitData))
+        const res = await (isNew
+          ? store.createCoupon(submitData)
+          : store.updateCoupon(submitData))
 
         if (res.success) {
           this.modalInstance.hide()
-          this.$emit('update-success', this.isNew ? '新增' : '更新')
+          this.$emit('update-success', isNew ? '新增' : '更新')
         } else {
           this.$emit('update-failed', res.message || '操作失敗')
         }
-      } catch (error) {
+      } catch {
         this.$emit('update-failed', '系統錯誤，請稍後再試')
       }
     },
+    /**
+     * 開啟模態框
+     * @param {Object|null} item 優惠券資料
+     */
     openModal(item) {
       this.tempCoupon = item ? { ...item } : { ...this.defaultCoupon }
       this.isNew = !item

@@ -14,6 +14,7 @@ const router = createRouter({
     },
     {
       path: '/user-products',
+      name: 'products',  
       component: () => import('../views/front/UserProductsView.vue'),
     },
     {
@@ -56,6 +57,12 @@ const router = createRouter({
   ],
 })
 
+/**
+ * 路由導航守衛，驗證使用者授權
+ * @param {object} to - 目的路由
+ * @param {object} from - 當前路由
+ * @param {Function} next - 導航守衛函數
+ */
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
@@ -63,7 +70,7 @@ router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 
   try {
-    
+
     // 如果已登入要去登入頁，直接轉到產品管理
     if (to.path === '/login' && authStore.isLoggedIn) {
       return next('/dashboard/products')

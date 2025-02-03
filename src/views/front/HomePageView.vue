@@ -4,7 +4,7 @@
       <div class="col-md-6 col-lg-4">
         <div class="card shadow-lg">
           <div class="card-body text-center p-5">
-            <h1 class="display-5 mb-4">歡迎光臨購物網站</h1>
+            <h1 class="display-5 mb-4">{{ title }}</h1>
             <div class="d-grid gap-3">
               <router-link to="/login" class="btn btn-primary btn-lg">
                 <i class="bi bi-person-circle me-2"></i>員工登入

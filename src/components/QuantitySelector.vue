@@ -41,24 +41,33 @@ export default {
     },
   },
   methods: {
-    
-    // 更新數量值並確保在有效範圍內
+    /**
+     * 更新數量值（並限制在 1 與 max 之間）
+     * @param {string} value 輸入的數值字串
+     */
     updateValue(value) {
-      const newValue = Math.min(Math.max(Number(value) || 1, 1), this.max)
+      const { max } = this
+      const newValue = Math.min(Math.max(Number(value) || 1, 1), max)
       this.$emit('update:modelValue', newValue)
     },
 
-    // 增加數量
+    /**
+     * 增加數量
+     */
     increase() {
-      if (this.modelValue < this.max) {
-        this.updateValue(this.modelValue + 1)
+      const { modelValue, max } = this
+      if (modelValue < max) {
+        this.updateValue(modelValue + 1)
       }
     },
 
-    // 減少數量
+    /**
+     * 減少數量
+     */
     decrease() {
-      if (this.modelValue > 1) {
-        this.updateValue(this.modelValue - 1)
+      const { modelValue } = this
+      if (modelValue > 1) {
+        this.updateValue(modelValue - 1)
       }
     },
   },

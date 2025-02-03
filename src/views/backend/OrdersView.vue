@@ -95,6 +95,8 @@
 <script>
 import OrderModal from '@/components/OrderModal.vue'
 import { useOrdersStore } from '@/stores/orderStore'
+import * as bootstrap from 'bootstrap'
+
 export default {
   name: 'OrdersView',
   components: {
@@ -112,33 +114,47 @@ export default {
     }
   },
   computed: {
+    // 分頁後的訂單
     paginatedOrders() {
       const start = (this.currentPage - 1) * this.itemsPerPage
       const end = start + this.itemsPerPage
       return this.store.orders.slice(start, end)
     },
+    // 總頁數
     totalPages() {
       return Math.max(1, Math.ceil(this.store.orders.length / this.itemsPerPage))
     },
   },
   methods: {
-    
-    // 格式化價格顯示
+    /**
+     * 格式化價格顯示.
+     * @param {number} price - 需要格式化的價格數字.
+     * @returns {string} 格式化後的價格字串.
+     */
     formatPrice(price) {
       return `NT$ ${price.toLocaleString()}`
     },
 
-    // 格式化日期顯示
+    /**
+     * 格式化日期顯示.
+     * @param {number} timestamp - UNIX 時間戳記 (秒).
+     * @returns {string} 格式化後的日期字串.
+     */
     formatDate(timestamp) {
       return new Date(timestamp * 1000).toLocaleDateString()
     },
 
-    // 切換測試/正式模式
+    /**
+     * 切換測試/正式模式.
+     */
     toggleTestMode() {
       this.store.toggleTestMode()
     },
 
-    // 批量刪除所有訂單
+    /**
+     * 批量刪除所有訂單.
+     * @returns {Promise<void>}
+     */
     async deleteAllOrders() {
       try {
         if (confirm('確定要刪除全部訂單嗎？此動作無法復原！')) {
@@ -151,10 +167,47 @@ export default {
         this.showToast(error.message || '刪除失敗', 'bg-danger')
       }
     },
+
+    /**
+     * 切換頁面.
+     * @param {number} page - 要切換到的頁碼.
+     */
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
       }
+    },
+
+    /**
+     * 顯示提示訊息.
+     * @param {string} message - 提示訊息內容.
+     */
+    showToast(message, type) {
+      this.toastMessage = message
+      this.toastType = type
+      const toastEl = this.$refs.toast
+      const toast = new bootstrap.Toast(toastEl)
+      toast.show()
+    },
+
+    /**
+     * 初始化訂單資料.
+     */
+    async initOrders() {
+      this.isLoading = true
+      try {
+        await this.store.getOrders()
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    /**
+     * 開啟訂單詳情 Modal
+     * @param {Object} order - 訂單資料
+     */
+    openModal(order) {
+      this.$refs.orderModal.openModal(order)
     },
   },
   beforeUnmount() {
@@ -163,15 +216,7 @@ export default {
     }
   },
   mounted() {
-    this.isLoading = true
-    this.store
-      .getOrders()
-      .then(() => {
-        this.isLoading = false
-      })
-      .catch(() => {
-        this.isLoading = false
-      })
+    this.initOrders()
   },
 }
 </script>

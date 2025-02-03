@@ -59,7 +59,6 @@
     </ul>
   </nav>
   <ProductModal ref="productModal"></ProductModal>
-
   <div class="toast-container position-fixed top-0 start-50 translate-middle-x pt-4">
     <div
       class="toast align-items-center text-white border-0"
@@ -99,30 +98,41 @@ export default {
     }
   },
   computed: {
+    // 分頁後的產品列表
     paginatedProducts() {
       const start = (this.currentPage - 1) * this.itemsPerPage
       const end = start + this.itemsPerPage
       return this.store.products.slice(start, end)
     },
+    // 總頁數
     totalPages() {
       return Math.max(1, Math.ceil(this.store.products.length / this.itemsPerPage))
     },
   },
   methods: {
-
-    // 格式化價格顯示
+    /**
+     * 格式化價格顯示
+     * @param {number} price - 原始價格
+     * @returns {string} 格式化後的價格字串
+     */
     formatPrice(price) {
       return new Intl.NumberFormat().format(price)
     },
-
-    // 顯示 Toast 通知
+    /**
+     * 顯示 Toast 通知
+     * @param {string} message - 要顯示的訊息
+     * @param {string} [type='success'] - Toast 顏色類型
+     */
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast.show()
     },
-
-    // 刪除產品
+    /**
+     * 刪除產品
+     * @param {number} id - 產品 id
+     * @returns {Promise<void>}
+     */
     async deleteProduct(id) {
       try {
         await this.store.deleteProduct(id)
@@ -131,33 +141,41 @@ export default {
         this.showToast(error.message, 'danger')
       }
     },
-
-    // 開啟產品編輯/新增 Modal
+    /**
+     * 開啟產品編輯或新增 Modal
+     * @param {object|null} [item=null] - 產品物件或 null 表示新增
+     */
     openModal(item = null) {
       if (this.$refs.productModal) {
         this.$refs.productModal.showModal(item)
       }
     },
-
-    // 分頁切換
+    /**
+     * 分頁切換
+     * @param {number} page - 目標頁數
+     */
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
       }
     },
   },
-  
-  // 生命週期：頁面創建時載入產品資料
+  /**
+   * 生命週期：在創建時載入產品資料
+   */
   async created() {
     this.isLoading = true
     try {
       await this.store.getProducts()
-    } catch (error) {
+    } catch {
       this.showToast('載入產品資料失敗', 'danger')
     } finally {
       this.isLoading = false
     }
   },
+  /**
+   * 生命週期：掛載完成後初始化 Toast
+   */
   mounted() {
     this.toast = new Toast(this.$refs.toast)
   },

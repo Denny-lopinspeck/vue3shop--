@@ -58,10 +58,6 @@ import { useAuthStore } from '@/stores/authStore'
 import Toast from 'bootstrap/js/dist/toast'
 
 export default {
-  setup() {
-    const authStore = useAuthStore()
-    return { authStore }
-  },
   data() {
     return {
       username: '',
@@ -73,13 +69,46 @@ export default {
     }
   },
   methods: {
+    /**
+     * 顯示 Toast 訊息
+     * @param {string} message - 要顯示的訊息
+     * @param {string} [type=success] - Toast 類型 (如 'success', 'danger')
+     */
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast.show()
     },
 
-    // 處理登入表單提交
+    /**
+     * 表單驗證
+     * @returns {boolean} 是否通過驗證
+     */
+    validateForm() {
+      if (!this.username || !this.password) {
+        this.showToast('請填寫完整的登入資訊', 'danger')
+        return false
+      }
+      if (!this.validateEmail(this.username)) {
+        this.showToast('請輸入有效的 Email 格式', 'danger')
+        return false
+      }
+      return true
+    },
+
+    /**
+     * Email 格式驗證
+     * @param {string} email - 要驗證的 Email 地址
+     * @returns {boolean} 是否為有效格式
+     */
+    validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    },
+
+    /**
+     * 處理登入表單提交
+     * @param {Event} event - 表單提交事件
+     */
     async login(event) {
       event.preventDefault()
       if (!this.validateForm()) {
@@ -95,29 +124,16 @@ export default {
       } finally {
         this.isLoading = false
       }
-    },
-
-    // 表單驗證
-    validateForm() {
-      if (!this.username || !this.password) {
-        this.showToast('請填寫完整的登入資訊', 'danger')
-        return false
-      }
-      if (!this.validateEmail(this.username)) {
-        this.showToast('請輸入有效的 Email 格式', 'danger')
-        return false
-      }
-      return true
-    },
-    
-    // Email 格式驗證
-    validateEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    },
+    }
   },
   mounted() {
     this.toast = new Toast(this.$refs.toast)
   },
+  computed: {
+    authStore() {
+      return useAuthStore()
+    }
+  }
 }
 </script>
 

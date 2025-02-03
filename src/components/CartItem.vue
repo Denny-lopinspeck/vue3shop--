@@ -54,13 +54,21 @@ export default {
     }
   },
   methods: {
+    /**
+     * 更新商品數量，並回傳更新資訊
+     * @param {number|string} value 新數量值
+     */
     updateQuantity(value) {
+      const { item } = this
       this.$emit('update-qty', {
-        id: this.item.id,
-        productId: this.item.product_id,
+        id: item.id,
+        productId: item.product_id,
         qty: value,
       })
     },
+    /**
+     * 移除該項商品
+     */
     removeItem() {
       if (confirm('確定要移除此商品嗎？')) {
         this.$emit('remove-item', this.item.id)
@@ -68,6 +76,7 @@ export default {
     },
   },
   watch: {
+    // 監聽 item.qty 的變化並更新 quantity
     'item.qty'(newVal) {
       this.quantity = newVal
     },
