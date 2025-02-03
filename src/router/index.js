@@ -28,9 +28,25 @@ const router = createRouter({
       component: () => import('@/views/front/CartView.vue'),
     },
     {
-      path: '/checkout/:orderId',
+      path: '/checkout/:orderId?',
       name: 'Checkout',
       component: () => import('../views/front/CheckOutView.vue'),
+      beforeEnter: (to, from, next) => {
+        // 檢查是否有未完成的訂單
+        const savedOrder = localStorage.getItem('checkout-order')
+
+        if (savedOrder) {
+          const order = JSON.parse(savedOrder)
+          if (!order.is_paid) {
+            // 如果有未完成的訂單，且不是從購物車頁面來的
+            if (from.name !== 'Cart') {
+              next('/cart')
+              return
+            }
+          }
+        }
+        next()
+      }
     },
     {
       path: '/dashboard',

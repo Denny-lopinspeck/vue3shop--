@@ -2,88 +2,14 @@
   <div class="checkout-view container">
     <div class="my-5 row justify-content-center">
       <div class="col-md-6" v-if="order">
-        <!-- 結合訂單摘要與訂單明細 -->
-        <div class="card mb-4">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">訂單明細與摘要</h5>
-            <span class="badge" :class="order.is_paid ? 'bg-success' : 'bg-warning'">
-              {{ order.is_paid ? '已付款' : '未付款' }}
-            </span>
-          </div>
-          <div class="card-body">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th>商品</th>
-                  <th>數量</th>
-                  <th class="text-end">小計</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in order.products" :key="item.id">
-                  <td>{{ item.product?.title || '商品已不存在' }}</td>
-                  <td>{{ item.qty }}</td>
-                  <td class="text-end">NT$ {{ item.total?.toLocaleString() || 0 }}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr v-if="order.discount > 0">
-                  <td colspan="2" class="text-end text-success">優惠折扣</td>
-                  <td class="text-end text-success">-NT$ {{ formatPrice(order.discount) }}</td>
-                </tr>
-                <tr>
-                  <td colspan="2" class="text-end fw-bold">結帳金額</td>
-                  <td class="text-end fw-bold">NT$ {{ formatPrice(order.final_total) }}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">收件資訊</h5>
-          </div>
-          <div class="card-body">
-            <table class="table">
-              <tbody>
-                <tr>
-                  <th>訂單編號</th>
-                  <td>{{ order.id }}</td>
-                </tr>
-                <tr>
-                  <th>姓名</th>
-                  <td>{{ order.user.name }}</td>
-                </tr>
-                <tr>
-                  <th>Email</th>
-                  <td>{{ order.user.email }}</td>
-                </tr>
-                <tr>
-                  <th>電話</th>
-                  <td>{{ order.user.tel }}</td>
-                </tr>
-                <tr>
-                  <th>地址</th>
-                  <td>{{ order.user.address }}</td>
-                </tr>
-                <tr>
-                  <th>留言</th>
-                  <td>{{ order.message }}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="text-end">
-              <button
-                class="btn btn-danger"
-                @click="handlePayment"
-                :disabled="order.is_paid || isLoading"
-              >
-                {{ isLoading ? '處理中...' : order.is_paid ? '已完成付款' : '確認付款' }}
-              </button>
-            </div>
-          </div>
-        </div>
+        <h2 class="h4 mb-3">結帳資訊</h2>
+        <OrderDetails :order="order" />
+        <UserInfo
+          :order="order"
+          :isLoading="isLoading"
+          @payment="handlePayment"
+          @cancel="cancelOrder"
+        />
       </div>
       <div v-else class="col-md-6 text-center">
         <div class="spinner-border" role="status" v-if="isLoading">
@@ -95,129 +21,91 @@
 </template>
 
 <script>
-import { useOrderStore } from '@/stores/order'
+import { useOrder } from '@/composables/useOrder'
 import { useCartStore } from '@/stores/cartStore'
+import { useOrderStore } from '@/stores/order'  // 新增這行
+import OrderDetails from '@/components/checkoutCart/OrderDetails.vue'
+import UserInfo from '@/components/checkoutCart/UserInfo.vue'
 
+/**
+ * @component CheckOutView
+ * @description 結帳頁面視圖組件，整合訂單詳情和用戶信息
+ */
 export default {
   name: 'CheckOutView',
+  components: {
+    OrderDetails,
+    UserInfo
+  },
 
-  data() {
+  setup() {
+    const cartStore = useCartStore()
+    const orderStore = useOrderStore()  // 新增這行
+    const { order, isLoading, getOrder } = useOrder()
+
     return {
-      orderStore: useOrderStore(),
-      cartStore: useCartStore(),
-      order: null,
-      isLoading: false,
+      order,
+      isLoading,
+      getOrder,
+      cartStore,
+      orderStore  // 新增這行
     }
   },
 
-  computed: {
-    originalTotal() {
-      return this.cartStore.displayTotal
-    },
-    discount() {
-      return this.cartStore.displayDiscount
-    },
-    finalTotal() {
-      return this.cartStore.displayFinalTotal
-    },
+  created() {
+    this.initializeOrder()
   },
 
-  async created() {
-    window.addEventListener('beforeunload', this.saveOrderToStorage)
-    const orderId = this.$route.params.orderId
-    const savedOrder = localStorage.getItem('checkout-order')
-    if (savedOrder) {
-      const order = JSON.parse(savedOrder)
-      if (!order.is_paid) {
-        this.order = order
-        return
+  /**
+   * @description 路由離開守衛
+   * @important 只在非取消訂單的情況下保存訂單狀態
+   */
+  beforeRouteLeave(to, from, next) {
+    // 只在使用者直接離開或重整頁面時保存訂單
+    if (this.order && !this.order.is_paid && !to.path.includes('/cart')) {
+      const confirm = window.confirm('您尚未完成付款，確定要離開嗎？離開後將保存訂單資訊。')
+      if (confirm) {
+        localStorage.setItem('checkout-order', JSON.stringify(this.order))
       } else {
-        localStorage.removeItem('checkout-order')
+        return next(false)
       }
     }
-    if (orderId) {
-      await this.getOrder(orderId)
-    }
-  },
-
-  beforeUnmount() {
-    window.removeEventListener('beforeunload', this.saveOrderToStorage)
+    next()
   },
 
   methods: {
     /**
-     * 處理商品資料，計算每個商品的總價
-     * @param {Object|Array} products - 訂單中的商品資料，可能為物件或陣列
-     * @returns {Array} 處理後的商品資料（含小計）
+     * @method initializeOrder
+     * @description 初始化訂單數據，優先從本地存儲讀取，否則從API獲取
+     * @async
      */
-    processProducts(products) {
-      if (!products) return []
-      if (Array.isArray(products)) {
-        return products.map((item) => ({
-          ...item,
-          total: (item.product?.price || 0) * (item.qty || 0)
-        }))
+    async initializeOrder() {
+      const savedOrder = localStorage.getItem('checkout-order')
+      if (savedOrder) {
+        const parsedOrder = JSON.parse(savedOrder)
+        if (!parsedOrder.is_paid) {
+          this.order = parsedOrder
+          return
+        }
+        localStorage.removeItem('checkout-order')
       }
-      return Object.entries(products).map(([id, item]) => ({
-        id,
-        ...item,
-        total: (item.product?.price || 0) * (item.qty || 0)
-      }))
-    },
 
-    /**
-     * 根據訂單ID獲取訂單詳細資訊
-     * @param {String} orderId - 訂單ID
-     * @description 取得訂單並進行資料處理
-     */
-    async getOrder(orderId) {
-      this.isLoading = true
-      try {
-        const result = await this.orderStore.getOrderById(orderId)
-
-        const processedProducts = this.processProducts(result.products)
-        const calculatedTotal = this.calculateTotal(processedProducts)
-        let finalTotal = result.final_total ? result.final_total : calculatedTotal
-        let discount = calculatedTotal - finalTotal
-
-        // 若訂單中無優惠券資料，但購物車有應用優惠券且有折扣預覽，則套用購物車的優惠券折扣
-        if (!result.coupon_code && this.cartStore.cart.coupon.isApplied && this.cartStore.cart.coupon.previewDiscount > 0) {
-          discount = this.cartStore.cart.coupon.previewDiscount
-          finalTotal = calculatedTotal - discount
-        }
-
-        this.order = {
-          ...result,
-          products: processedProducts,
-          total: calculatedTotal,
-          final_total: finalTotal,
-          discount: discount,
-          user: this.formatUser(result.user),
-        }
-      } catch (error) {
-        console.error('載入訂單失敗:', error)
-        this.$toast?.error('載入訂單失敗')
-      } finally {
-        this.isLoading = false
+      const orderId = this.$route.params.orderId
+      if (orderId) {
+        await this.getOrder(orderId)
       }
     },
 
     /**
-     * 計算商品總金額
-     * @param {Array} products - 處理後的商品資料
-     * @returns {Number} 商品總金額
-     */
-    calculateTotal(products) {
-      return products.reduce((sum, item) => {
-        const price = item.product?.price || 0
-        const qty = item.qty || 0
-        return sum + (price * qty)
-      }, 0)
-    },
-
-    /**
-     * 處理付款流程
-     * @description 進行付款請求，更新購物車與訂單狀態
+     * @method handlePayment
+     * @description 處理訂單支付邏輯
+     * @async
+     * @important 支付流程：
+     * 1. 驗證訂單有效性
+     * 2. 處理支付請求
+     * 3. 更新購物車狀態
+     * 4. 清理本地存儲
+     * 5. 導航至訂單完成頁面
      */
     async handlePayment() {
       if (!this.order?.id) {
@@ -225,12 +113,7 @@ export default {
         return
       }
 
-      if (this.isLoading) {
-        return
-      }
-
-      if (this.order.is_paid) {
-        this.$toast?.error('此訂單已完成付款')
+      if (this.isLoading || this.order.is_paid) {
         return
       }
 
@@ -238,26 +121,17 @@ export default {
 
       try {
         const result = await this.orderStore.payOrder(this.order.id)
-
         if (result.success) {
           this.$toast?.success('付款成功！')
-
-          // 更新訂單狀態
           this.order = result.order
-
-          // 更新購物車
           await this.cartStore.getCart()
+          localStorage.removeItem('checkout-order')
 
-          // 清除本地存儲
-          this.clearOrderStorage()
-
-          // 延遲導航
           setTimeout(() => {
             this.$router.push('/user-products')
           }, 1500)
         }
       } catch (error) {
-        console.error('付款處理失敗:', error)
         this.$toast?.error(error.message || '付款失敗，請稍後再試')
       } finally {
         this.isLoading = false
@@ -265,29 +139,43 @@ export default {
     },
 
     /**
-     * 格式化價格顯示
-     * @param {Number} price - 價格
-     * @returns {String} 格式化後的價格
+     * @method cancelOrder
+     * @description 取消訂單並清除所有相關資料
+     * @async
+     * @important 取消訂單流程：
+     * 1. 清除本地存儲
+     * 2. 清除優惠券資料
+     * 3. 更新購物車狀態
+     * 4. 導回購物車頁面
      */
-    formatPrice(price) {
-      return Number(price).toLocaleString()
-    },
-
-    // 新增保存未結帳資料的方法
-    saveOrderToStorage() {
-      if (this.order && !this.order.is_paid) {
-        localStorage.setItem('checkout-order', JSON.stringify(this.order))
+    async cancelOrder() {
+      if (!window.confirm('確定要取消訂單嗎？此操作將清除所有訂單資料且無法復原。')) {
+        return
       }
-    },
 
-    // 新增清除保存資料的方法
-    clearOrderStorage() {
-      localStorage.removeItem('checkout-order')
-    },
+      try {
+        this.isLoading = true
 
-    formatUser(user) {
-      if (!user) return {}
-      return user
+        // 清除本地存儲的所有訂單相關資料
+        localStorage.removeItem('checkout-order')
+        localStorage.removeItem('cart-coupon')
+
+        // 清除購物車的優惠券資料
+        await this.cartStore.clearCouponData()
+
+        // 刷新購物車資料
+        await this.cartStore.refreshCart()
+
+        this.$toast?.success('訂單已取消')
+
+        // 直接導向購物車頁面
+        this.$router.push('/cart')
+      } catch (error) {
+        console.error('取消訂單失敗:', error)
+        this.$toast?.error('取消訂單失敗')
+      } finally {
+        this.isLoading = false
+      }
     }
   }
 }
@@ -297,15 +185,7 @@ export default {
 .checkout-view {
   margin-top: 2rem;
 }
-.order-summary {
-  margin-bottom: 2rem;
-  text-align: left;
-}
 .card {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.badge {
-  padding: 0.5em 1em;
 }
 </style>

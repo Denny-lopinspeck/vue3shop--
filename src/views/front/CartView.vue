@@ -9,6 +9,26 @@
       </div>
     </div>
 
+    <div v-if="hasUnfinishedOrder" class="alert alert-warning">
+      <div class="d-flex justify-content-between align-items-center">
+        <p class="mb-0">您有未完成的訂單</p>
+        <div class="btn-group">
+          <button
+            class="btn btn-warning"
+            @click="continueCheckout"
+          >
+            繼續結帳
+          </button>
+          <button
+            class="btn btn-outline-danger"
+            @click="clearUnfinishedOrder"
+          >
+            清除訂單
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="alert alert-info" v-if="!cartItems.length">購物車內尚無商品</div>
     <CartTable
       v-else
@@ -65,10 +85,23 @@ export default {
       isLoading: false,
       selectedItem: null,
       form: {}, // 新增form屬性來存儲訂單資料
+      hasUnfinishedOrder: false
     }
   },
   created() {
     this.initializeCart()
+    // 檢查是否有未完成的訂單，但不顯示提示
+    const savedOrder = localStorage.getItem('checkout-order')
+    if (savedOrder) {
+      const order = JSON.parse(savedOrder)
+      // 只有在訂單未付款時才顯示繼續結帳選項
+      if (!order.is_paid) {
+        this.hasUnfinishedOrder = true
+      } else {
+        // 如果訂單已付款，直接清除本地存儲
+        localStorage.removeItem('checkout-order')
+      }
+    }
   },
   computed: {
     cartItems() {
@@ -317,7 +350,36 @@ export default {
         console.error('更新購物車失敗:', error)
       }
     },
-  },
+    /**
+     * @method continueCheckout
+     * @description 繼續未完成的結帳
+     */
+    continueCheckout() {
+      const savedOrder = localStorage.getItem('checkout-order')
+      if (savedOrder) {
+        const order = JSON.parse(savedOrder)
+        if (!order.is_paid) {
+          this.$router.push(`/checkout/${order.id}`)
+        } else {
+          // 如果訂單已付款，清除資料並重新整理購物車
+          localStorage.removeItem('checkout-order')
+          this.hasUnfinishedOrder = false
+          this.refreshCart()
+        }
+      }
+    },
+    /**
+     * @method clearUnfinishedOrder
+     * @description 清除未完成的訂單
+     */
+    clearUnfinishedOrder() {
+      if (window.confirm('確定要清除未完成的訂單嗎？')) {
+        localStorage.removeItem('checkout-order')
+        this.hasUnfinishedOrder = false
+        this.$toast?.success('已清除未完成的訂單')
+      }
+    }
+  }
 }
 </script>
 

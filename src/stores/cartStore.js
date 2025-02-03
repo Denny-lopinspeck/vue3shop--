@@ -50,13 +50,17 @@ export const useCartStore = defineStore('cart', {
         const { data } = await axios.get(`/api/${import.meta.env.VITE_APP_PATH}/cart`)
         if (!data?.success) throw new Error('取得購物車失敗')
 
+        // 從 localStorage 讀取優惠券資訊
+        const savedCoupon = JSON.parse(localStorage.getItem('cart-coupon') || '{}')
+
         this.$patch((state) => {
           state.cart = {
             ...data.data,
-            coupon: state.cart.coupon,
+            coupon: savedCoupon.isApplied ? savedCoupon : state.cart.coupon,
           }
         })
 
+        // 如果有優惠券，重新計算折扣
         if (this.cart.coupon.isApplied) {
           this.cart.coupon.previewDiscount = Math.floor(
             this.cart.total * (this.cart.coupon.percent / 100)
@@ -64,11 +68,18 @@ export const useCartStore = defineStore('cart', {
         }
 
         // 同步購物車資料到 localStorage
-        localStorage.setItem('cart-data', JSON.stringify(this.cart))
+        this.saveCartToStorage()
         return data
       } catch {
         throw new Error('無法取得購物車資料')
       }
+    },
+
+    // 新增儲存購物車資料的方法
+    saveCartToStorage() {
+      localStorage.setItem('cart-data', JSON.stringify(this.cart))
+      // 單獨儲存優惠券資訊
+      localStorage.setItem('cart-coupon', JSON.stringify(this.cart.coupon))
     },
 
     /**
@@ -335,6 +346,9 @@ export const useCartStore = defineStore('cart', {
           }
         })
 
+        // 儲存優惠券資訊
+        this.saveCartToStorage()
+
         return {
           success: true,
           message: response.data.message,
@@ -359,6 +373,8 @@ export const useCartStore = defineStore('cart', {
           previewDiscount: 0
         }
       })
+      // 清除優惠券儲存
+      localStorage.removeItem('cart-coupon')
     },
 
     /**
