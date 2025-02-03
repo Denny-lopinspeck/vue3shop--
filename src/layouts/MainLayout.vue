@@ -19,7 +19,7 @@
 </template>
 
 <script>
-import CartDropdown from '../components/CartDropdown.vue'
+import CartDropdown from '../components/cart/CartDropdown.vue'
 
 export default {
   name: 'MainLayout',

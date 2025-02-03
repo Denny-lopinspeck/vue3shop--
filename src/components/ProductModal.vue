@@ -212,11 +212,9 @@ import { useProductStore } from '@/stores/productStore'
 import { Modal, Toast } from 'bootstrap'
 
 export default {
-  // 移除 setup()，統一使用 Options API
   name: 'ProductModal',
   data() {
     return {
-      // 初始化 store
       store: useProductStore(),
       modal: null,
       toast: null,

@@ -383,6 +383,14 @@ export const useCartStore = defineStore('cart', {
       localStorage.removeItem('cart-data')
 
       this.getCart()
+    },
+
+    clearCoupon() {
+      this.cart.coupon = {
+        code: '',
+        percent: 0,
+        isApplied: false
+      }
     }
   },
 })

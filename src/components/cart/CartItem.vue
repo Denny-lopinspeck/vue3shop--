@@ -12,13 +12,11 @@
       <div class="col">
         <h6 class="mb-1">{{ item.product.title }}</h6>
         <div class="d-flex justify-content-between align-items-center">
-          <div class="quantity-wrapper" style="width: 120px">
-            <QuantitySelector
-              v-model:value="quantity"
-              :max="item.product.num"
-              @update:value="updateQuantity"
-            />
-          </div>
+          <QuantitySelector
+            v-model:value="quantity"
+            :max="item.product.num"
+            @update:value="$emit('update-qty', getUpdatePayload($event))"
+          />
           <div class="text-end">
             <del class="text-muted small">NT$ {{ item.product.origin_price }}</del>
             <div class="text-danger">NT$ {{ item.product.price }}</div>
@@ -35,7 +33,7 @@
 </template>
 
 <script>
-import QuantitySelector from './QuantitySelector.vue'
+import QuantitySelector from '../QuantitySelector.vue'
 
 export default {
   name: 'CartItem',
@@ -54,25 +52,18 @@ export default {
     }
   },
   methods: {
-    /**
-     * 更新商品數量，並回傳更新資訊
-     * @param {number|string} value 新數量值
-     */
-    updateQuantity(value) {
-      const { item } = this
-      this.$emit('update-qty', {
-        id: item.id,
-        productId: item.product_id,
-        qty: value,
-      })
+    getUpdatePayload(value) {
+      return {
+        id: this.item.id,
+        productId: this.item.product_id,
+        qty: value
+      }
     },
     /**
      * 移除該項商品
      */
     removeItem() {
-      if (confirm('確定要移除此商品嗎？')) {
-        this.$emit('remove-item', this.item.id)
-      }
+      this.$emit('remove-item', this.item.id)
     },
   },
   watch: {
