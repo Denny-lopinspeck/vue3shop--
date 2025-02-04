@@ -18,19 +18,22 @@ export const useCouponStore = defineStore('coupon', {
   }),
 
   actions: {
-    /**
-     * 獲取優惠券列表
-     * @param {number} [page=1] - 頁碼，預設為 1
-     * @returns {Promise<Object>} API 回傳結果
-     */
+    // 獲取優惠券列表
     async getCoupons(page = 1) {
       this.setLoading(true)
       try {
         const res = await axiosInstance.get(`v2/api/${apiPath}/admin/coupons?page=${page}`)
         if (res.data.success) {
           this.setCoupons(res.data.coupons)
+          return {
+            success: true,
+            pagination: res.data.pagination
+          }
         }
-        return res.data
+        return {
+          success: false,
+          message: res.data.message,
+        }
       } catch (error) {
         return { success: false, message: error.response?.data?.message }
       } finally {
@@ -38,11 +41,7 @@ export const useCouponStore = defineStore('coupon', {
       }
     },
 
-    /**
-     * 創建優惠券
-     * @param {Object} couponData - 優惠券資料
-     * @returns {Promise<Object>} API 回傳結果
-     */
+    // 創建優惠券
     async createCoupon(couponData) {
       this.setLoading(true)
       try {
@@ -67,11 +66,7 @@ export const useCouponStore = defineStore('coupon', {
       }
     },
 
-    /**
-     * 刪除優惠券
-     * @param {string} id - 優惠券ID
-     * @returns {Promise<Object>} API 回傳結果
-     */
+    // 刪除優惠券
     async deleteCoupon(id) {
       this.setLoading(true)
       try {
@@ -87,11 +82,7 @@ export const useCouponStore = defineStore('coupon', {
       }
     },
 
-    /**
-     * 更新優惠券
-     * @param {Object} couponData - 優惠券資料，包含 id
-     * @returns {Promise<Object>} API 回傳結果
-     */
+    // 更新優惠券
     async updateCoupon(couponData) {
       this.setLoading(true)
       try {
@@ -112,11 +103,7 @@ export const useCouponStore = defineStore('coupon', {
       }
     },
 
-    /**
-     * 驗證優惠券
-     * @param {string} code - 優惠券代碼
-     * @returns {Promise<Object>} API 回傳結果
-     */
+    // 驗證優惠券
     async verifyCoupon(code) {
       try {
         const res = await axiosInstance.post(`v2/api/${apiPath}/verify_coupon`, {
@@ -131,19 +118,12 @@ export const useCouponStore = defineStore('coupon', {
       }
     },
 
-    /**
-     * 更新優惠券規則
-     * @param {Object} newRules - 新的優惠券規則
-     */
+    // 更新優惠券規則
     async updateCouponRules(newRules) {
       this.setRules(newRules)
     },
 
-    /**
-     * 獲取優惠券狀態
-     * @param {Object} coupon - 優惠券資料
-     * @returns {Object} 包含 isExpired 與 isActive 屬性
-     */
+    // 獲取優惠券狀態
     getCouponStatus(coupon) {
       const now = Math.floor(Date.now() / 1000)
       return {
@@ -152,26 +132,14 @@ export const useCouponStore = defineStore('coupon', {
       }
     },
 
-    /**
-     * 設置加載狀態
-     * @param {boolean} isLoading - 加載狀態
-     */
     setLoading(isLoading) {
       this.isLoading = isLoading
     },
 
-    /**
-     * 設置優惠券列表
-     * @param {Array} coupons - 優惠券陣列
-     */
     setCoupons(coupons) {
       this.coupons = coupons
     },
 
-    /**
-     * 設置優惠券規則
-     * @param {Object} newRules - 新的優惠券規則
-     */
     setRules(newRules) {
       this.rules = {
         ...this.rules,
@@ -181,12 +149,7 @@ export const useCouponStore = defineStore('coupon', {
   },
 })
 
-/**
- * 驗證優惠券規則
- * @param {Object} couponData - 優惠券資料
- * @param {Object} rules - 規則設定
- * @returns {boolean} 是否符合規則
- */
+// 驗證優惠券規則
 function validateCouponRules(couponData, rules) {
   if (couponData.minimum < rules.minAmount) {
     return false
@@ -199,12 +162,7 @@ function validateCouponRules(couponData, rules) {
   return true
 }
 
-/**
- * 計算優惠券到期日期
- * @param {string|Date} dueDate - 輸入到期日期，若未輸入則使用預設 expirationDays
- * @param {number} expirationDays - 到期天數
- * @returns {number} Unix 時間戳
- */
+// 計算優惠券到期日期
 function calculateExpirationDate(dueDate, expirationDays) {
   if (!dueDate) {
     const date = new Date()

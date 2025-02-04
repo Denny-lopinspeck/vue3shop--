@@ -9,13 +9,9 @@
       >
         刪除全部訂單
       </button>
-      <button class="btn btn-outline-secondary btn-sm" @click="toggleTestMode">
-        {{ store.isTestMode ? '切換正式模式' : '切換測試模式' }}
-      </button>
     </div>
   </div>
   <div class="text-end">
-    <h3 class="text-center mb-4">訂單管理</h3>
   </div>
   <div v-if="isLoading" class="text-center mt-5">
     <div class="spinner-border" role="status">
@@ -51,22 +47,10 @@
     </tbody>
   </table>
   <nav v-if="paginatedOrders.length > 0" aria-label="Page navigation" class="mt-4">
-    <ul class="pagination justify-content-center">
-      <li class="page-item" :class="{ disabled: currentPage === 1 }">
-        <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">上一頁</a>
-      </li>
-      <li
-        v-for="page in totalPages"
-        :key="page"
-        class="page-item"
-        :class="{ active: page === currentPage }"
-      >
-        <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-      </li>
-      <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-        <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">下一頁</a>
-      </li>
-    </ul>
+    <PaginationComponent
+      :data-length="store.orders.length"
+      :on-page-change="changePage"
+    />
   </nav>
   <OrderModal
     ref="orderModal"
@@ -92,133 +76,94 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import OrderModal from '@/components/OrderModal.vue'
 import { useOrdersStore } from '@/stores/orderStore'
+import { usePagination } from '@/composables/usePagination'
 import * as bootstrap from 'bootstrap'
 
-export default {
-  name: 'OrdersView',
-  components: {
-    OrderModal,
-  },
-  data() {
-    return {
-      store: useOrdersStore(),
-      isLoading: false,
-      toastMessage: '',
-      toastType: '',
-      toast: null,
-      currentPage: 1,
-      itemsPerPage: 5,
+// 初始化狀態管理和參考
+const store = useOrdersStore()
+const orderModal = ref(null)
+const isLoading = ref(false)
+const toastMessage = ref('')
+const toastType = ref('')
+const toast = ref(null)
+
+// 分頁相關設定
+const {
+  currentPage,
+  changePage,
+  PaginationComponent
+} = usePagination()
+
+const itemsPerPage = 5
+
+// 計算分頁後的訂單資料
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return store.orders.slice(start, end)
+})
+
+// 格式化工具函數
+const formatPrice = (price) => `NT$ ${price.toLocaleString()}`
+const formatDate = (timestamp) => new Date(timestamp * 1000).toLocaleDateString()
+
+// 刪除所有訂單功能
+const deleteAllOrders = async () => {
+  try {
+    if (confirm('確定要刪除全部訂單嗎？此動作無法復原！')) {
+      const res = await store.deleteAllOrders()
+      if (res.success) {
+        showToast('已刪除全部訂單', 'bg-success')
+      }
     }
-  },
-  computed: {
-    // 分頁後的訂單
-    paginatedOrders() {
-      const start = (this.currentPage - 1) * this.itemsPerPage
-      const end = start + this.itemsPerPage
-      return this.store.orders.slice(start, end)
-    },
-    // 總頁數
-    totalPages() {
-      return Math.max(1, Math.ceil(this.store.orders.length / this.itemsPerPage))
-    },
-  },
-  methods: {
-    /**
-     * 格式化價格顯示.
-     * @param {number} price - 需要格式化的價格數字.
-     * @returns {string} 格式化後的價格字串.
-     */
-    formatPrice(price) {
-      return `NT$ ${price.toLocaleString()}`
-    },
-
-    /**
-     * 格式化日期顯示.
-     * @param {number} timestamp - UNIX 時間戳記 (秒).
-     * @returns {string} 格式化後的日期字串.
-     */
-    formatDate(timestamp) {
-      return new Date(timestamp * 1000).toLocaleDateString()
-    },
-
-    /**
-     * 切換測試/正式模式.
-     */
-    toggleTestMode() {
-      this.store.toggleTestMode()
-    },
-
-    /**
-     * 批量刪除所有訂單.
-     * @returns {Promise<void>}
-     */
-    async deleteAllOrders() {
-      try {
-        if (confirm('確定要刪除全部訂單嗎？此動作無法復原！')) {
-          const res = await this.store.deleteAllOrders()
-          if (res.success) {
-            this.showToast('已刪除全部訂單', 'bg-success')
-          }
-        }
-      } catch (error) {
-        this.showToast(error.message || '刪除失敗', 'bg-danger')
-      }
-    },
-
-    /**
-     * 切換頁面.
-     * @param {number} page - 要切換到的頁碼.
-     */
-    changePage(page) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.currentPage = page
-      }
-    },
-
-    /**
-     * 顯示提示訊息.
-     * @param {string} message - 提示訊息內容.
-     */
-    showToast(message, type) {
-      this.toastMessage = message
-      this.toastType = type
-      const toastEl = this.$refs.toast
-      const toast = new bootstrap.Toast(toastEl)
-      toast.show()
-    },
-
-    /**
-     * 初始化訂單資料.
-     */
-    async initOrders() {
-      this.isLoading = true
-      try {
-        await this.store.getOrders()
-      } finally {
-        this.isLoading = false
-      }
-    },
-
-    /**
-     * 開啟訂單詳情 Modal
-     * @param {Object} order - 訂單資料
-     */
-    openModal(order) {
-      this.$refs.orderModal.openModal(order)
-    },
-  },
-  beforeUnmount() {
-    if (this.toast) {
-      this.toast.dispose()
-    }
-  },
-  mounted() {
-    this.initOrders()
-  },
+  } catch (error) {
+    showToast(error.message || '刪除失敗', 'bg-danger')
+  }
 }
+
+// Toast 通知系統
+const showToast = (message, type) => {
+  toastMessage.value = message
+  toastType.value = type
+  const toastEl = toast.value
+  const bsToast = new bootstrap.Toast(toastEl)
+  bsToast.show()
+}
+
+// 初始化訂單資料
+const initOrders = async () => {
+  isLoading.value = true
+  try {
+    await store.getOrders()
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 開啟訂單詳細資料 Modal
+const openModal = (order) => {
+  orderModal.value.openModal(order)
+}
+
+// 生命週期鉤子
+onMounted(() => {
+  initOrders()
+})
+
+// 清理 Bootstrap Toast 實例
+onBeforeUnmount(() => {
+  const toastEl = toast.value
+  if (toastEl) {
+    const bsToast = bootstrap.Toast.getInstance(toastEl)
+    if (bsToast) {
+      bsToast.dispose()
+    }
+  }
+})
 </script>
 
 <style>

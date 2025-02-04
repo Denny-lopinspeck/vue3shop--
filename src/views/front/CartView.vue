@@ -13,18 +13,8 @@
       <div class="d-flex justify-content-between align-items-center">
         <p class="mb-0">您有未完成的訂單</p>
         <div class="btn-group">
-          <button
-            class="btn btn-warning"
-            @click="continueCheckout"
-          >
-            繼續結帳
-          </button>
-          <button
-            class="btn btn-outline-danger"
-            @click="clearUnfinishedOrder"
-          >
-            清除訂單
-          </button>
+          <button class="btn btn-warning" @click="continueCheckout">繼續結帳</button>
+          <button class="btn btn-outline-danger" @click="clearUnfinishedOrder">清除訂單</button>
         </div>
       </div>
     </div>
@@ -65,7 +55,7 @@
 <script>
 import { useCartStore } from '@/stores/cartStore'
 import CartTable from '@/components/cart/CartTable.vue'
-import OrderForm from '@/components/cart/CartForm.vue'  // 更新引入路徑
+import OrderForm from '@/components/cart/CartForm.vue'
 import CouponForm from '@/components/cart/CartCoupon.vue'
 import CarModal from '@/components/cart/CarModal.vue'
 import { showToast } from '@/utils/helpers'
@@ -74,33 +64,24 @@ import Swal from 'sweetalert2'
 export default {
   name: 'CartView',
   components: {
-    CartTable,
-    OrderForm,
-    CouponForm,
-    CarModal
+    CartTable, OrderForm, CouponForm, CarModal
   },
   data() {
     return {
       cartStore: useCartStore(),
       isLoading: false,
       selectedItem: null,
-      form: {}, // 新增form屬性來存儲訂單資料
+      form: {},
       hasUnfinishedOrder: false
     }
   },
   created() {
     this.initializeCart()
-    // 檢查是否有未完成的訂單，但不顯示提示
     const savedOrder = localStorage.getItem('checkout-order')
     if (savedOrder) {
       const order = JSON.parse(savedOrder)
-      // 只有在訂單未付款時才顯示繼續結帳選項
-      if (!order.is_paid) {
-        this.hasUnfinishedOrder = true
-      } else {
-        // 如果訂單已付款，直接清除本地存儲
-        localStorage.removeItem('checkout-order')
-      }
+      this.hasUnfinishedOrder = !order.is_paid
+      if (order.is_paid) localStorage.removeItem('checkout-order')
     }
   },
   computed: {
@@ -109,43 +90,37 @@ export default {
     }
   },
   methods: {
+    // 初始化購物車 - 從 localStorage 讀取已保存的購物車數據
     async initializeCart() {
       const savedCart = localStorage.getItem('cart-data')
       if (savedCart) {
         try {
           this.cartStore.$patch({ cart: JSON.parse(savedCart) })
-        } catch (e) {
-          console.error('載入購物車資料失敗', e)
+        } catch {
+          console.error('購物車初始化失敗')
         }
       }
       await this.refreshCart()
     },
-    /**
-     * 載入購物車資料
-     */
+
+    // 載入購物車數據 - 處理優惠券折扣等資訊
     async loadCartData() {
       if (this.isLoading) return
 
       try {
         this.isLoading = true
-        const result = await this.cartStore.getCart()
-
-        if (!result.success) {
-          throw new Error('購物車資料載入失敗')
-        }
 
         if (this.cartStore.cart.coupon?.isApplied) {
           this.discount = this.cartStore.displayDiscount
         }
       } catch {
-        showToast('error', '獲取購物車資料失敗')
+        showToast('error', '載入失敗')
       } finally {
         this.isLoading = false
       }
     },
-    /**
-     * 清理元件資源
-     */
+
+    // 清理組件狀態 - 重置所有相關變數
     cleanupComponent() {
       this.selectedItem = null
       this.couponCode = ''
@@ -155,10 +130,8 @@ export default {
         this.$refs.deleteDialog.close()
       }
     },
-    /**
-     * 更新商品數量
-     * @param {Object} item - 商品物件
-     */
+
+    // 更新商品數量 - 包含庫存檢查邏輯
     async updateQuantity(item) {
       if (!item || item.qty < 1) {
         item.qty = 1
@@ -168,7 +141,7 @@ export default {
       const availableStock = item.product.unit
       if (item.qty > availableStock) {
         item.qty = availableStock
-        showToast('warning', `數量不能超過商品庫存 ${availableStock}`)
+        showToast('warning', `超過庫存 ${availableStock}`)
         return
       }
 
@@ -176,16 +149,13 @@ export default {
         this.isLoading = true
         await this.cartStore.updateCart(item.id, item.product_id, item.qty)
       } catch {
-        showToast('error', '更新數量失敗')
-        await this.loadCartData()
+        showToast('error', '更新失敗')
       } finally {
         this.isLoading = false
       }
     },
-    /**
-     * 移除單一商品 (需使用者確認)
-     * @param {number} id - 商品的 ID
-     */
+
+    // 移除購物車商品 - 含確認對話框
     async removeItem(id) {
       const result = await Swal.fire({
         title: '確定要移除此商品嗎？',
@@ -207,9 +177,8 @@ export default {
         }
       }
     },
-    /**
-     * 清空購物車所有商品
-     */
+
+    // 清空整個購物車 - 含確認對話框
     async clearCart() {
       const result = await Swal.fire({
         title: '確定要清空購物車嗎？',
@@ -233,14 +202,26 @@ export default {
         }
       }
     },
-    /**
-     * 提交訂單 (表單驗證通過時)
-     */
+
+    // 檢查購物車商品庫存 - 確保所有商品庫存充足
+    async checkCartItemsStock() {
+      try {
+        for (const item of this.cartItems) {
+          if (!item.qty || !item.product.unit || item.qty > item.product.unit) {
+            showToast('error', `商品 ${item.product.title} 庫存不足`);
+            return false;
+          }
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // 提交訂單 - 處理訂單創建流程
     async submitOrder(formData) {
       try {
         this.isLoading = true
-        this.form = formData
-
         const orderData = {
           user: {
             name: formData.name,
@@ -253,43 +234,33 @@ export default {
 
         const result = await this.cartStore.createOrder(orderData)
         if (result.success) {
-          // 清除優惠券資訊
           if (this.cartStore.cart.coupon) {
             this.cartStore.$patch({
               cart: {
                 ...this.cartStore.cart,
-                coupon: {
-                  code: '',
-                  percent: 0,
-                  isApplied: false
-                }
+                coupon: { code: '', percent: 0, isApplied: false }
               }
             })
           }
-          this.discount = 0
           this.$router.push(`/checkout/${result.orderId}`)
-          showToast('success', '訂單建立成功！')
+          showToast('success', '訂單建立成功')
         }
       } catch {
-        showToast('error', '建立訂單失敗，請稍後再試')
+        showToast('error', '訂單建立失敗')
       } finally {
         this.isLoading = false
       }
     },
-    /**
-     * 開啟刪除確認對話框
-     * @param {Object} item - 要刪除的商品
-     */
+
+    // 打開刪除對話框 - 用於確認刪除商品
     openDeleteDialog(item) {
       if (!this.$refs.deleteDialog) return
 
       this.selectedItem = item
       this.$refs.deleteDialog.show()
     },
-    /**
-     * 處理刪除確認動作
-     * @param {Object} param0 - 包含 id、productId 和 qty 的物件
-     */
+
+    // 處理刪除確認 - 執行實際的刪除操作
     async handleDeleteConfirm({ id, productId, qty }) {
       if (!this.cartStore) return
 
@@ -308,11 +279,8 @@ export default {
         this.isLoading = false
       }
     },
-    /**
-     * 套用優惠券至購物車
-     * @param {string} code - 優惠券代碼
-     * @returns {Promise<void>}
-     */
+
+    // 應用優惠券 - 處理優惠券驗證和折扣計算
     async applyCoupon(code) {
       if (!code || this.isLoading) return
 
@@ -322,38 +290,31 @@ export default {
 
         if (result?.success) {
           this.discount = this.cartStore.displayDiscount
-          showToast('success', `優惠券套用成功，折扣 ${this.cartStore.cart.coupon.percent}%`)
+          showToast('success', `折扣 ${this.cartStore.cart.coupon.percent}%`)
         }
-      } catch (error) {
-        console.error('優惠券套用失敗:', error)
+      } catch {
         showToast('error', '優惠券無效')
         this.discount = 0
       } finally {
         this.isLoading = false
       }
     },
-    /**
-     * 格式化價格為區域字串
-     * @param {number} price - 需要格式化的價格
-     * @returns {string} 格式化後的價格字串
-     */
+
+    // 格式化價格顯示
     formatPrice(price) {
       return Number(price).toLocaleString()
     },
-    /**
-     * 更新購物車資料
-     */
+
+    // 刷新購物車數據
     async refreshCart() {
       try {
         await this.cartStore.getCart()
       } catch (error) {
-        console.error('更新購物車失敗:', error)
+        console.error('Failed to refresh cart:', error);
       }
     },
-    /**
-     * @method continueCheckout
-     * @description 繼續未完成的結帳
-     */
+
+    // 繼續未完成的結帳流程
     continueCheckout() {
       const savedOrder = localStorage.getItem('checkout-order')
       if (savedOrder) {
@@ -361,17 +322,14 @@ export default {
         if (!order.is_paid) {
           this.$router.push(`/checkout/${order.id}`)
         } else {
-          // 如果訂單已付款，清除資料並重新整理購物車
           localStorage.removeItem('checkout-order')
           this.hasUnfinishedOrder = false
           this.refreshCart()
         }
       }
     },
-    /**
-     * @method clearUnfinishedOrder
-     * @description 清除未完成的訂單
-     */
+
+    // 清除未完成的訂單
     clearUnfinishedOrder() {
       if (window.confirm('確定要清除未完成的訂單嗎？')) {
         localStorage.removeItem('checkout-order')
@@ -388,22 +346,13 @@ export default {
   max-width: 160px;
 }
 
-quantity-control .form-control {
+.quantity-control .form-control {
   max-width: 80px;
 }
 
 .table th,
 .table td {
   vertical-align: middle;
-}
-
-.card {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.table-responsive {
-  margin: -1rem;
 }
 
 @media (max-width: 768px) {

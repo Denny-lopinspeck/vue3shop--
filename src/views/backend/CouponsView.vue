@@ -40,23 +40,11 @@
       </tr>
     </tbody>
   </table>
-  <nav v-if="store.coupons.length > 0" aria-label="Page navigation" class="mt-4">
-    <ul class="pagination justify-content-center">
-      <li class="page-item" :class="{ disabled: !pagination.has_pre }">
-        <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page - 1)">
-          上一頁
-        </a>
-      </li>
-      <li class="page-item active">
-        <span class="page-link">{{ pagination.current_page || 1 }}</span>
-      </li>
-      <li class="page-item" :class="{ disabled: !pagination.has_next }">
-        <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)">
-          下一頁
-        </a>
-      </li>
-    </ul>
-  </nav>
+  <component
+    :is="PaginationComponent"
+    :data-length="store.coupons.length"
+    :on-page-change="onPageChange"
+  />
   <CouponModal
     ref="couponModal"
     @update-success="handleSuccess"
@@ -82,6 +70,7 @@
 
 <script>
 import { useCouponStore } from '../../stores/couponStore'
+import { usePagination } from '../../composables/usePagination'
 import CouponModal from '../../components/CouponModal.vue'
 import { Toast } from 'bootstrap'
 
@@ -91,27 +80,39 @@ export default {
     CouponModal,
   },
   data() {
+    const {
+      pagination,
+      currentPage,
+      hasPrev,
+      hasNext,
+      totalPages,
+      updatePagination,
+      changePage,
+      PaginationComponent
+    } = usePagination()
+
     return {
       store: useCouponStore(),
       isLoading: false,
       toastMessage: '',
       toastType: 'bg-success',
-      pagination: {},
-      currentPage: 1,
+      pagination,
+      currentPage,
+      hasPrev,
+      hasNext,
+      totalPages,
+      updatePagination,
+      changePage,
+      PaginationComponent,
     }
   },
   methods: {
-    /**
-     * 打開模態框
-     * @param {Object} [item] 優惠券資料（選填）
-     */
+    // 打開編輯/新增優惠券模態框
     openModal(item) {
       this.$refs.couponModal?.openModal(item)
     },
-    /**
-     * 刪除優惠券
-     * @param {number|string} id 優惠券 ID
-     */
+
+    // 刪除優惠券
     async deleteCoupon(id) {
       if (!id || !confirm('確定要刪除此優惠券嗎？')) return
 
@@ -130,37 +131,27 @@ export default {
         this.isLoading = false
       }
     },
-    /**
-     * 格式化日期
-     * @param {number} timestamp 時間戳（秒）
-     * @returns {string} 格式化日期字串
-     */
+
     formatDate(timestamp) {
       return new Date(timestamp * 1000).toLocaleDateString()
     },
-    /**
-     * 顯示提示訊息
-     * @param {string} message 提示文字
-     * @param {string} [type='success'] 類型（決定顏色）
-     */
+
+    // 顯示提示訊息
     showToast(message, type = 'success') {
       this.toastMessage = message
       this.toastType = `bg-${type}`
       this.toast?.show()
     },
-    /**
-     * 獲取優惠券列表
-     * @param {number} [page=1] 頁碼
-     */
+
+    // 獲取優惠券列表
     async getCoupons(page = 1) {
       if (this.isLoading) return
 
       this.isLoading = true
       try {
-        const res = await this.store.getCoupons(page, 5)
+        const res = await this.store.getCoupons(page)
         if (res.success) {
-          this.pagination = res.pagination
-          // 確保頁碼在有效範圍內
+          this.updatePagination(res.pagination)
           if (page > this.pagination.total_pages) {
             this.currentPage = 1
             await this.getCoupons(1)
@@ -170,30 +161,18 @@ export default {
         this.isLoading = false
       }
     },
-    /**
-     * 切換頁面
-     * @param {number} page 目標頁碼
-     */
-    async changePage(page) {
-      if (page > 0 && page <= this.pagination.total_pages) {
-        this.currentPage = page
-        await this.getCoupons(page)
-      }
-    },
-    /**
-     * 處理成功操作
-     * @param {string} action 操作名稱
-     */
+
     handleSuccess(action) {
       this.showToast(`${action}成功！`)
       this.getCoupons(this.currentPage)
     },
-    /**
-     * 處理失敗操作
-     * @param {string} message 錯誤訊息
-     */
+
     handleError(message) {
-      this.showToast(message, 'danger')
+      this.showToast(message, '錯誤！')
+    },
+
+    async onPageChange(page) {
+      await this.changePage(page, this.getCoupons)
     },
   },
   mounted() {

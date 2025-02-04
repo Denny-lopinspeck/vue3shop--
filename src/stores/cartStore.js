@@ -3,7 +3,6 @@ import axios from '@/utils/axios'
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
-    // 購物車狀態
     cart: {
       carts: [],
       total: 0,
@@ -12,39 +11,29 @@ export const useCartStore = defineStore('cart', {
         code: '',
         percent: 0,
         isApplied: false,
-        previewDiscount: 0  // 優惠券折扣預覽金額
+        previewDiscount: 0
       }
     },
     isLoading: false,
-    // 購物車驗證規則
     validationRules: {
-      minPrice: 0,          // 最小價格
-      maxDiscount: 100,     // 最大折扣百分比
-      minPurchaseAmount: 100, // 最小購買金額
-      maxQuantityPerItem: 99  // 單品最大購買數量
+      minPrice: 0,
+      maxDiscount: 100,
+      minPurchaseAmount: 100,
+      maxQuantityPerItem: 99
     }
   }),
 
   getters: {
-    // 計算購物車內商品數量
     cartItemCount: (state) => state.cart.carts.reduce((sum, item) => sum + item.qty, 0),
-    // 總金額
     totalAmount: (state) => state.cart.final_total || 0,
-    // 計算折扣金額
     calculatedDiscount: (state) => state.cart.total - state.cart.final_total,
-    // 顯示總金額
     displayTotal: (state) => state.cart.total,
-    // 顯示折扣金額
     displayDiscount: (state) => state.cart.coupon.previewDiscount,
-    // 顯示最終金額
     displayFinalTotal: (state) => state.cart.total - state.cart.coupon.previewDiscount,
   },
 
   actions: {
-    /**
-     * 取得購物車資料
-     * @returns {Promise<object>} 回傳 API 資料
-     */
+    // 取得購物車資料
     async getCart() {
       try {
         const { data } = await axios.get(`/api/${import.meta.env.VITE_APP_PATH}/cart`)
@@ -75,68 +64,21 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    // 新增儲存購物車資料的方法
     saveCartToStorage() {
       localStorage.setItem('cart-data', JSON.stringify(this.cart))
       // 單獨儲存優惠券資訊
       localStorage.setItem('cart-coupon', JSON.stringify(this.cart.coupon))
     },
 
-    /**
-     * 驗證商品價格
-     * @param {number} price 商品價格
-     * @returns {boolean} 是否有效
-     */
-    validatePrice(price) {
-      return typeof price === 'number' &&
-        price >= this.validationRules.minPrice &&
-        !Number.isNaN(price) &&
-        Number.isFinite(price) &&
-        price >= 0
-    },
-
-    /**
-     * 驗證折扣金額
-     * @param {number} total 總價格
-     * @param {number} discount 折扣金額
-     * @returns {boolean} 是否有效
-     */
-    validateDiscount(total, discount) {
-      return this.validatePrice(total) &&
-        this.validatePrice(discount) &&
-        discount >= 0 &&
-        discount <= total
-    },
-
-    /**
-     * 驗證商品數量
-     * @param {number|string} qty 商品數量
-     * @param {number|string} stock 庫存數量
-     * @returns {object} 驗證結果與訊息
-     */
+    // 驗證商品庫存數量
     validateQuantity(qty, stock) {
-      const parsedQty = parseInt(qty, 10)
-      const parsedStock = parseInt(stock, 10)
-      const maxAllowed = Math.min(parsedStock, this.validationRules.maxQuantityPerItem)
+      const parsedQty = Number(qty);
+      const parsedStock = Number(stock);
 
-      if (Number.isNaN(parsedQty) || Number.isNaN(parsedStock)) {
+      if (isNaN(parsedQty) || parsedQty <= 0 || parsedQty > parsedStock) {
         return {
           isValid: false,
-          message: '數量或庫存格式無效',
-        }
-      }
-
-      if (parsedQty <= 0) {
-        return {
-          isValid: false,
-          message: '數量必須大於 0',
-        }
-      }
-
-      if (parsedQty > maxAllowed) {
-        return {
-          isValid: false,
-          message: `數量超過限制 (最大: ${maxAllowed})`,
+          message: '數量無效',
         }
       }
 
@@ -146,12 +88,7 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    /**
-     * 加入購物車
-     * @param {number|string} productId 產品ID
-     * @param {number} [qty=1] 加入數量，預設為 1
-     * @returns {Promise<object>} API 回傳結果
-     */
+    // 加入商品到購物車
     async addToCart(productId, qty = 1) {
       const currentItem = this.cart.carts.find((item) => item.product_id === productId)
 
@@ -177,13 +114,7 @@ export const useCartStore = defineStore('cart', {
       return data
     },
 
-    /**
-     * 更新購物車項目
-     * @param {string|number} cartId 購物車項目ID
-     * @param {number|string} productId 產品ID
-     * @param {number} qty 更新後數量
-     * @returns {Promise<object>} API 回傳結果
-     */
+    // 更新購物車商品數量
     async updateCart(cartId, productId, qty) {
       const data = {
         product_id: productId,
@@ -198,11 +129,7 @@ export const useCartStore = defineStore('cart', {
       return response.data
     },
 
-    /**
-     * 移除購物車項目
-     * @param {string|number} cartId 購物車項目ID
-     * @returns {Promise<object>} API 回傳結果
-     */
+    // 移除購物車商品
     async removeCartItem(cartId) {
       const response = await axios.delete(`/api/${import.meta.env.VITE_APP_PATH}/cart/${cartId}`)
       if (response.data.success) {
@@ -211,10 +138,7 @@ export const useCartStore = defineStore('cart', {
       return response.data
     },
 
-    /**
-     * 清空購物車
-     * @returns {Promise<object>} API 回傳結果
-     */
+    // 清空購物車
     async clearCart() {
       if (!this.cart.carts || this.cart.carts.length === 0) {
         return {
@@ -232,38 +156,21 @@ export const useCartStore = defineStore('cart', {
       return response.data
     },
 
-    /**
-     * 刷新購物車資料
-     * @returns {Promise<object>} 最新購物車資料
-     */
-    async refreshCart() {
-      return await this.getCart()
-    },
-
-    /**
-     * 建立訂單並清空購物車
-     * @param {object} orderData 訂單資料
-     * @returns {Promise<object>} 回傳訂單建立結果
-     */
+    // 建立訂單
     async createOrder(orderData) {
       if (!this.cart.carts?.length) {
         throw new Error('購物車內無商品')
       }
 
-      if (this.cart.final_total <= this.validationRules.minPurchaseAmount) {
-        throw new Error(`訂單金額需大於 ${this.validationRules.minPurchaseAmount} 元`)
-      }
-
       const stockErrors = this.cart.carts
         .map((item) => {
-          const stock = parseInt(item.product?.unit || 0, 10)
-          const validation = this.validateQuantity(item.qty, stock)
-          return !validation.isValid ? `${item.product?.title || '未知商品'}: ${validation.message}` : null
+          const validation = this.validateQuantity(item.qty, item.product?.unit)
+          return !validation.isValid ? null : null
         })
         .filter(Boolean)
 
       if (stockErrors.length > 0) {
-        throw new Error(`庫存檢查失敗:\n${stockErrors.join('\n')}`)
+        throw new Error('商品數量檢查失敗')
       }
 
       const finalOrderData = {
@@ -276,7 +183,7 @@ export const useCartStore = defineStore('cart', {
       })
 
       if (!data?.success) {
-        throw new Error(data?.message || '建立訂單失敗')
+        throw new Error('建立訂單失敗')
       }
 
       await this.clearCart()
@@ -287,39 +194,7 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    /**
-     * 移除購物車項目的部分數量
-     * @param {string|number} cartId 購物車項目ID
-     * @param {number|string} productId 產品ID
-     * @param {number} removeQty 要移除的數量
-     * @returns {Promise<object>} API 回傳結果或移除項目結果
-     */
-    async removeItemQuantity(cartId, productId, removeQty) {
-      const cartItem = this.cart.carts.find((item) => item.id === cartId)
-      if (!cartItem?.product) {
-        throw new Error('找不到購物車項目')
-      }
-
-      const newQty = cartItem.qty - removeQty
-      const stock = cartItem.product?.unit || 0
-
-      if (newQty <= 0) {
-        return this.removeCartItem(cartId)
-      }
-
-      const validation = this.validateQuantity(newQty, stock)
-      if (!validation.isValid) {
-        throw new Error(validation.message)
-      }
-
-      return this.updateCart(cartId, productId, newQty)
-    },
-
-    /**
-     * 套用優惠券並計算折扣金額
-     * @param {string} code 優惠券代碼
-     * @returns {Promise<object>} 回傳套用結果
-     */
+    // 套用優惠券
     async applyCoupon(code) {
       if (!code?.trim()) {
         throw new Error('請輸入優惠券代碼')
@@ -361,9 +236,6 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    /**
-     * 清除優惠券資料
-     */
     clearCouponData() {
       this.$patch((state) => {
         state.cart.coupon = {
@@ -377,9 +249,6 @@ export const useCartStore = defineStore('cart', {
       localStorage.removeItem('cart-coupon')
     },
 
-    /**
-     * 清除購物車資料並刷新購物車
-     */
     clearCartData() {
       this.$patch((state) => {
         state.cart = {

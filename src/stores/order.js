@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import axios from '@/utils/axios'
 
-export const useOrderStore = defineStore('order', {
+export const useOrderStore = defineStore('customerOrder', {
   state: () => ({
     currentOrder: null,
     isLoading: false,
@@ -9,11 +9,7 @@ export const useOrderStore = defineStore('order', {
   }),
 
   actions: {
-    /**
-     * 根據訂單ID獲取訂單
-     * @param {string} orderId - 訂單ID
-     * @returns {Promise<Object>} 返回訂單資訊
-     */
+    // 獲取指定訂單
     async getOrderById(orderId) {
       this.isLoading = true
       try {
@@ -22,34 +18,9 @@ export const useOrderStore = defineStore('order', {
           throw new Error(response.data.message)
         }
 
-        const order = response.data.order
-        // 確保金額為數字
-        order.total = Number(order.total || 0)
-        order.final_total = Number(order.final_total || 0)
-
-        // 計算優惠券折扣金額
-        if (order.coupon) {
-          order.couponDiscount = order.total - order.final_total
-          // 確保優惠券資訊完整
-          order.coupon = {
-            code: order.coupon.code || '',
-            title: order.coupon.title || '',
-            percent: order.coupon.percent || 0,
-            due_date: order.coupon.due_date
-          }
-        }
-
-        // 處理商品資料
-        if (order.products) {
-          order.products = Object.entries(order.products).map(([id, item]) => ({
-            id,
-            ...item,
-            total: Number(item.price || 0) * Number(item.qty || 0)
-          }))
-        }
-
-        this.currentOrder = order
-        return order
+        const orderData = response.data.order
+        this.currentOrder = this.processOrderData(orderData)
+        return this.currentOrder
       } catch (error) {
         this.error = error.message
         throw error
@@ -58,42 +29,54 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
-    /**
-     * 付款訂單
-     * @param {string} orderId 訂單 ID
-     * @returns {Promise<object>} 付款結果，包含 success 與其他訂單資料
-     */
-    async payOrder(orderId) {
-      if (!orderId) {
-        throw new Error('訂單編號不存在')
+    processOrderData(orderData) {
+      // 處理基本金額
+      orderData.total = Number(orderData.total || 0)
+      orderData.final_total = Number(orderData.final_total || 0)
+
+      // 處理優惠券
+      if (orderData.total > orderData.final_total) {
+        const discountAmount = orderData.total - orderData.final_total
+        const discountPercent = Number(orderData.coupon_code) || 0
+
+        orderData.coupon = {
+          code: orderData.coupon_code,
+          title: `${discountPercent}% 折價券`,
+          percent: discountPercent,
+          due_date: orderData.coupon?.due_date || null,
+          discount: discountAmount
+        }
+
+        orderData.discount = discountAmount
+        orderData.discountPercent = discountPercent
       }
 
-      this.isLoading = true
+      // 處理商品資料
+      if (orderData.products) {
+        orderData.products = Object.entries(orderData.products).map(([id, item]) => ({
+          id,
+          ...item,
+          total: Number(item.price || 0) * Number(item.qty || 0)
+        }))
+      }
+
+      return orderData
+    },
+
+    // 付款處理
+    async payOrder(orderId) {
       try {
-        // 檢查訂單狀態
-        const orderStatus = await this.getOrderById(orderId)
-        if (!orderStatus) {
-          throw new Error('找不到訂單')
-        }
-
-        const response = await axios.post(`/api/${import.meta.env.VITE_APP_PATH}/pay/${orderId}`)
-
-        if (!response.data.success) {
-          throw new Error(response.data.message || '付款處理失敗')
-        }
-
-        // 重新獲取最新訂單狀態
-        const updatedOrder = await this.getOrderById(orderId)
+        const paymentResult = await axios.post(
+          `/api/${import.meta.env.VITE_APP_PATH}/pay/${orderId}`
+        )
 
         return {
-          success: true,
-          order: updatedOrder
+          success: paymentResult.data.success,
+          message: paymentResult.data.message,
+          order: this.currentOrder
         }
       } catch (error) {
-        console.error('付款處理發生錯誤:', error)
-        throw new Error(error.message || '付款處理失敗')
-      } finally {
-        this.isLoading = false
+        throw new Error(error?.response?.data?.message || '付款處理失敗')
       }
     },
   },

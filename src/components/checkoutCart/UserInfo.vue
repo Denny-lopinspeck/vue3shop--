@@ -25,7 +25,7 @@
         <div class="btn-group">
           <button
             class="btn btn-outline-danger"
-            @click="$emit('cancel')"
+            @click="cancelOrder"
             :disabled="isLoading"
           >
             取消訂單
@@ -44,37 +44,30 @@
 </template>
 
 <script>
-/**
- * @component UserInfo
- * @description 顯示用戶訂單信息的組件
- * @emits payment - 當用戶點擊支付按鈕時觸發
- * @emits cancel - 當用戶點擊取消按鈕時觸發
- */
+import { useCartStore } from '@/stores/cartStore'
+import { STORAGE_KEYS, MESSAGES } from '@/constants/checkout'
+
+
+
+ //顯示用戶訂單資料
+
 export default {
   name: 'UserInfo',
   props: {
-    /**
-     * @prop {Object} order - 訂單信息
-     * @required
-     */
     order: {
       type: Object,
       required: true
     },
-    /**
-     * @prop {Boolean} isLoading - 加載狀態
-     */
     isLoading: {
       type: Boolean,
       default: false
     }
   },
+  setup() {
+    const cartStore = useCartStore()
+    return { cartStore }
+  },
   computed: {
-    /**
-     * @computed userInfo
-     * @description 格式化用戶信息對象
-     * @returns {Object} 用戶基本信息
-     */
     userInfo() {
       return {
         name: this.order.user.name,
@@ -83,12 +76,6 @@ export default {
         address: this.order.user.address
       }
     },
-
-    /**
-     * @computed labels
-     * @description 用戶信息字段標籤
-     * @returns {Object} 字段對應的顯示標籤
-     */
     labels() {
       return {
         name: '姓名',
@@ -97,30 +84,41 @@ export default {
         address: '地址'
       }
     },
-
-    /**
-     * @computed btnText
-     * @description 支付按鈕文字
-     * @returns {string} 按鈕顯示文字
-     */
     btnText() {
       if (this.isLoading) return '處理中...'
       return this.order.is_paid ? '已完成付款' : '確認付款'
     }
   },
   methods: {
-    /**
-     * @method handlePaymentClick
-     * @description 處理支付按鈕點擊事件
-     */
+
+    //處理支付按鈕點擊事件
+
     handlePaymentClick() {
-      console.log('支付按鈕被點擊')
-      console.log('訂單狀態:', {
-        orderId: this.order.id,
-        isPaid: this.order.is_paid,
-        isLoading: this.isLoading
-      })
       this.$emit('payment')
+    },
+
+    clearStorage() {
+      localStorage.removeItem(STORAGE_KEYS.ORDER)
+      localStorage.removeItem(STORAGE_KEYS.COUPON)
+    },
+
+    //取消訂單並清除相關數據
+
+    async cancelOrder() {
+      if (!window.confirm(MESSAGES.CANCEL_CONFIRM)) return
+
+      this.$emit('loading', true)
+      try {
+        this.clearStorage()
+        await this.cartStore.clearCouponData()
+        await this.cartStore.refreshCart()
+        this.$toast?.success(MESSAGES.ORDER_CANCEL)
+        this.$router.push('/cart')
+      } catch (error) {
+        this.$toast?.error(error.message || '取消訂單失敗')
+      } finally {
+        this.$emit('loading', false)
+      }
     }
   }
 }
@@ -129,5 +127,9 @@ export default {
 <style scoped>
 .btn-group {
   gap: 0.5rem;
+}
+
+.btn-group .btn {
+  border-radius: 4px !important;
 }
 </style>
